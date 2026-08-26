@@ -21,8 +21,10 @@ describe("flowdo schema", () => {
 
   it("cascades task deletion to task_labels", async () => {
     await queryLocalDb(`delete from flowdo.profiles`); // clean slate for this test's inserts
+    const email = `schema-test-${crypto.randomUUID()}@example.com`; // unique per run so re-running without a db reset doesn't hit the auth.users email uniqueness constraint
     const user = await queryLocalDb(
-      `insert into auth.users (id, email) values (gen_random_uuid(), 'schema-test@example.com') returning id`
+      `insert into auth.users (id, email) values (gen_random_uuid(), $1) returning id`,
+      [email]
     );
     const userId = user.rows[0].id;
     const task = await queryLocalDb(
