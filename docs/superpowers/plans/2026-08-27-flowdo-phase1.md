@@ -351,12 +351,14 @@ git commit -m "feat: scaffold Next.js project with Tailwind, Vitest, and FlowDo 
 
 **Files:**
 - Create: `supabase/config.toml` (via CLI, then edited)
+- Create: `supabase/migrations/0001_create_flowdo_schema.sql`
 - Create: `.env.test`
 - Modify: `.gitignore`
 - Create: `tests/helpers/admin-client.ts`
 - Create: `vitest.integration.config.ts`
 
 **Interfaces:**
+- Produces: the empty `flowdo` schema (with `usage`/default-privilege grants) from `supabase/migrations/0001_create_flowdo_schema.sql` — a bootstrap migration Task 3 builds on top of; without it, `supabase start`'s PostgREST health check fails against a schema that doesn't exist yet.
 - Produces: `createAdminClient(): SupabaseClient` from `tests/helpers/admin-client.ts` — a service-role client pointed at the **local** Supabase instance, schema `flowdo`, used by every integration test task from here on to set up/tear down test users.
 - Produces: `LOCAL_SUPABASE_URL: string`, `LOCAL_SUPABASE_ANON_KEY: string` exported constants from the same file, read from `.env.test`.
 
@@ -378,12 +380,26 @@ extra_search_path = ["public", "extensions"]
 max_rows = 1000
 ```
 
-- [ ] **Step 3: Start local Supabase**
+- [ ] **Step 3: Write a bootstrap migration for the `flowdo` schema**
+
+`supabase start`'s PostgREST health check fails if a schema listed in `[api] schemas` doesn't exist yet in the database — and on a fresh local volume, `flowdo` won't exist until a migration creates it. Create `supabase/migrations/0001_create_flowdo_schema.sql` now so the very first `supabase start` succeeds; Task 3 will add the actual tables in a later migration on top of this:
+
+```sql
+create schema if not exists flowdo;
+
+grant usage on schema flowdo to anon, authenticated, service_role;
+alter default privileges in schema flowdo
+  grant select, insert, update, delete on tables to anon, authenticated;
+alter default privileges in schema flowdo
+  grant usage, select on sequences to anon, authenticated;
+```
+
+- [ ] **Step 4: Start local Supabase**
 
 Run: `npx supabase start`
-Expected: Docker containers start; output prints `API URL`, `anon key`, `service_role key`. This will take a few minutes on first run (image pulls).
+Expected: Docker containers start; output prints `API URL`, `anon key`, `service_role key`. This will take a few minutes on first run (image pulls). The bootstrap migration from Step 3 runs automatically during startup, so PostgREST's health check against the `flowdo` schema passes.
 
-- [ ] **Step 4: Record local dev credentials**
+- [ ] **Step 5: Record local dev credentials**
 
 Run: `npx supabase status`
 Copy the printed `API URL`, `anon key`, and `service_role key` into a new `.env.test` file:
@@ -396,7 +412,7 @@ SUPABASE_SERVICE_ROLE_KEY=<service_role key from supabase status>
 
 These are local-only Docker credentials (not the real project's), safe to commit — but double check `npx supabase status` output doesn't differ per machine before committing; if it's identical across runs on this CLI version, commit it, otherwise add `.env.test` to `.gitignore` instead and note in the README that contributors must generate their own via `supabase status`.
 
-- [ ] **Step 5: Write `tests/helpers/admin-client.ts`**
+- [ ] **Step 6: Write `tests/helpers/admin-client.ts`**
 
 ```ts
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -423,11 +439,11 @@ export function createAnonClient(): SupabaseClient {
 }
 ```
 
-- [ ] **Step 6: Install `dotenv`**
+- [ ] **Step 7: Install `dotenv`**
 
 Run: `npm install --save-dev dotenv`
 
-- [ ] **Step 7: Write `vitest.integration.config.ts`**
+- [ ] **Step 8: Write `vitest.integration.config.ts`**
 
 ```ts
 import { defineConfig } from "vitest/config";
@@ -444,7 +460,7 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 8: Write a smoke integration test to prove the harness works**
+- [ ] **Step 9: Write a smoke integration test to prove the harness works**
 
 Create `tests/integration/harness.test.ts`:
 
@@ -462,19 +478,19 @@ describe("integration test harness", () => {
 });
 ```
 
-- [ ] **Step 9: Run it**
+- [ ] **Step 10: Run it**
 
 Run: `npm run test:integration`
 Expected: PASS (requires `npx supabase start` to already be running).
 
-- [ ] **Step 10: Update `.gitignore`**
+- [ ] **Step 11: Update `.gitignore`**
 
 Add lines: `supabase/.temp` and confirm `.env`/`.env.local` remain ignored (added in an earlier step). `.env.test` and `.env.example` are NOT ignored — they contain no real secrets.
 
-- [ ] **Step 11: Commit**
+- [ ] **Step 12: Commit**
 
 ```bash
-git add supabase/config.toml supabase/.gitignore .env.test .gitignore tests/helpers/admin-client.ts vitest.integration.config.ts package.json package-lock.json
+git add supabase/config.toml supabase/.gitignore supabase/migrations/0001_create_flowdo_schema.sql .env.test .gitignore tests/helpers/admin-client.ts vitest.integration.config.ts package.json package-lock.json
 git commit -m "feat: add local Supabase CLI setup and integration test harness"
 ```
 
@@ -483,12 +499,13 @@ git commit -m "feat: add local Supabase CLI setup and integration test harness"
 ### Task 3: Database schema migration
 
 **Files:**
-- Create: `supabase/migrations/0001_init_schema.sql`
+- Create: `supabase/migrations/0002_schema_tables.sql`
 - Create: `tests/integration/schema.test.ts`
 - Create: `tests/helpers/pg-client.ts`
 
 **Interfaces:**
-- Produces: the `flowdo` schema with tables `profiles`, `projects`, `project_members`, `tasks`, `labels`, `task_labels`, `notifications`, `activity_logs`, consumed by every later task's RLS policies and application code.
+- Consumes: the `flowdo` schema created by Task 2's `supabase/migrations/0001_create_flowdo_schema.sql` bootstrap migration — this task's migration only adds enums/tables/triggers on top of it, it does not re-create the schema.
+- Produces: tables `profiles`, `projects`, `project_members`, `tasks`, `labels`, `task_labels`, `notifications`, `activity_logs` in the `flowdo` schema, consumed by every later task's RLS policies and application code.
 - Produces: `queryLocalDb(sql: string, params?: unknown[]): Promise<QueryResult>` from `tests/helpers/pg-client.ts`, used to verify schema/constraints directly.
 
 - [ ] **Step 1: Write `tests/helpers/pg-client.ts`**
@@ -567,17 +584,11 @@ describe("flowdo schema", () => {
 Run: `npm run test:integration`
 Expected: FAIL — `relation "flowdo.tasks" does not exist` (or similar) since the migration doesn't exist yet.
 
-- [ ] **Step 4: Write `supabase/migrations/0001_init_schema.sql`**
+- [ ] **Step 4: Write `supabase/migrations/0002_schema_tables.sql`**
+
+The `flowdo` schema itself (plus its usage/default-privilege grants) already exists from Task 2's `0001_create_flowdo_schema.sql` bootstrap migration — this migration only adds enums, tables, and triggers on top of it:
 
 ```sql
-create schema if not exists flowdo;
-
-grant usage on schema flowdo to anon, authenticated, service_role;
-alter default privileges in schema flowdo
-  grant select, insert, update, delete on tables to anon, authenticated;
-alter default privileges in schema flowdo
-  grant usage, select on sequences to anon, authenticated;
-
 create type flowdo.task_status as enum ('TODO', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED');
 create type flowdo.task_priority as enum ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
 create type flowdo.member_role as enum ('OWNER', 'ADMIN', 'MEMBER', 'VIEWER');
@@ -730,7 +741,7 @@ Expected: PASS.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add supabase/migrations/0001_init_schema.sql tests/integration/schema.test.ts tests/helpers/pg-client.ts
+git add supabase/migrations/0002_schema_tables.sql tests/integration/schema.test.ts tests/helpers/pg-client.ts
 git commit -m "feat: add flowdo schema, enums, tables, and cascade/index constraints"
 ```
 
@@ -739,7 +750,7 @@ git commit -m "feat: add flowdo schema, enums, tables, and cascade/index constra
 ### Task 4: RLS policies migration
 
 **Files:**
-- Create: `supabase/migrations/0002_rls_policies.sql`
+- Create: `supabase/migrations/0003_rls_policies.sql`
 - Create: `tests/integration/rls.test.ts`
 - Create: `tests/helpers/test-user.ts`
 
@@ -875,7 +886,7 @@ describe("RLS: profiles", () => {
 Run: `npm run test:integration`
 Expected: FAIL — without RLS, user B can read/update/delete user A's rows, so the "prevents" assertions fail (e.g. `data` is not `[]`).
 
-- [ ] **Step 4: Write `supabase/migrations/0002_rls_policies.sql`**
+- [ ] **Step 4: Write `supabase/migrations/0003_rls_policies.sql`**
 
 ```sql
 alter table flowdo.profiles enable row level security;
@@ -1004,7 +1015,7 @@ Expected: PASS — all RLS tests, plus the Task 3 schema tests, pass.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add supabase/migrations/0002_rls_policies.sql tests/integration/rls.test.ts tests/helpers/test-user.ts
+git add supabase/migrations/0003_rls_policies.sql tests/integration/rls.test.ts tests/helpers/test-user.ts
 git commit -m "fix: enforce ownership and membership via RLS across all flowdo tables"
 ```
 
