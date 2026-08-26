@@ -1,0 +1,205 @@
+# FlowDo — Phase 1 Design: Foundation, Auth, Database, Dashboard Shell
+
+**Status:** Approved for implementation
+**Date:** 2026-08-27
+
+## Purpose
+
+FlowDo is a full-stack productivity app (tasks, projects, calendar, analytics).
+The full product is too large for one spec/plan cycle, so it is decomposed by
+the phases already defined in the project's CLAUDE.md:
+
+- **Phase 1 (this spec):** project setup, full database schema + RLS, auth
+  (signup/login/OTP verification/password reset/logout), protected routes,
+  dashboard shell with empty states.
+- Phase 2: tasks, projects, priorities, due dates, completion, search, filtering.
+- Phase 3: subtasks, labels, calendar, recurring tasks, activity, notifications.
+- Phase 4: analytics, realtime collaboration, project members, advanced features.
+- Phase 5: AI features.
+
+Each later phase gets its own brainstorm → spec → plan cycle once Phase 1 is
+solid end-to-end.
+
+## Goals for Phase 1
+
+A user can sign up, verify their email via a 6-digit OTP, log in, get
+redirected into a working (if empty) dashboard shell, navigate all top-level
+views, edit their profile/password, and log out — all backed by a real
+Postgres schema with RLS enforced and verified by tests. No task or project
+data operations exist yet; those are Phase 2.
+
+## Non-goals
+
+Task/project CRUD, subtasks, labels, calendar rendering, recurring task logic,
+notification delivery, analytics charts, realtime subscriptions, Google OAuth,
+Resend SMTP wiring (deferred — Supabase's default auth email is used for now).
+
+## Tech stack
+
+- Next.js (App Router) + TypeScript (strict) + React
+- Tailwind CSS + shadcn/ui + Lucide icons
+- React Hook Form + Zod for all forms
+- TanStack Query (wired up; lightly used until Phase 2)
+- Supabase: Postgres, Auth, RLS — via `@supabase/ssr` (not the deprecated
+  auth-helpers package)
+- Package manager: npm
+- Testing: Vitest + React Testing Library (unit/component); integration tests
+  for auth/RLS run against a **local Supabase instance** started via the
+  Supabase CLI (`supabase start`, Docker-backed) — isolated from the real
+  project, safe to re-run and use in CI
+- Supabase CLI (via `npx supabase`) for migrations, linked to the real
+  project for `db push` in addition to local dev
+
+## Architecture
+
+### Session handling
+
+`@supabase/ssr` provides browser and server clients that read/write the
+Supabase session via cookies. A single `middleware.ts`:
+
+1. Refreshes the session on every request.
+2. Redirects unauthenticated users hitting `/app/*` to `/login`.
+3. Redirects authenticated-but-unverified users (no `email_confirmed_at`) to
+   `/verify`.
+4. Redirects authenticated+verified users hitting `/login`, `/signup`, or
+   `/verify` to `/app/dashboard`.
+
+Server Components read the session via the server client for SSR-safe
+protected pages; Client Components use the browser client for interactive
+forms.
+
+### Database schema
+
+Tables from CLAUDE.md section 5, created now even though most aren't used by
+UI until later phases (avoids migration churn, lets RLS get tested upfront):
+
+```
+profiles         (id -> auth.users.id, email, full_name, avatar_url, timestamps)
+projects         (id, name, description, color, icon, owner_id, timestamps)
+project_members  (id, project_id, user_id, role[OWNER|ADMIN|MEMBER|VIEWER], created_at)
+tasks            (id, user_id, project_id, parent_task_id, title, description,
+                   status[TODO|IN_PROGRESS|COMPLETED|CANCELLED],
+                   priority[LOW|MEDIUM|HIGH|URGENT], due_date, completed_at,
+                   position, timestamps)
+labels           (id, user_id, name, color, created_at)
+task_labels      (task_id, label_id)
+notifications    (id, user_id, task_id, type, title, message, is_read, created_at)
+activity_logs    (id, user_id, task_id, project_id, action, metadata, created_at)
+```
+
+Details:
+
+- `status`, `priority`, `role` are Postgres enums, not free-text.
+- Every table has FKs with sensible cascade: deleting a project cascades to
+  its tasks and `project_members`; deleting a task cascades to child tasks
+  (`parent_task_id`) and `task_labels`; deleting a label cascades to
+  `task_labels`.
+- Indexes on all FK columns plus `tasks.due_date`, `tasks.status`,
+  `tasks.user_id`.
+- `updated_at` maintained via a trigger, not application code.
+- `profiles` row is created automatically via a trigger on `auth.users`
+  insert (`handle_new_user`), populating `full_name` from signup metadata.
+
+### Row Level Security
+
+RLS enabled on every table. Policies derive authorization only from
+`auth.uid()`, never from a client-supplied `user_id`:
+
+- `profiles`: a user can select/update only their own row.
+- `tasks`, `labels`: owner-only (`user_id = auth.uid()`) for all operations.
+- `projects`: select/update allowed for the owner or any `project_members`
+  row matching `auth.uid()` with sufficient role; only the owner can delete.
+- `project_members`: visible to members of the same project; only
+  OWNER/ADMIN can insert/delete membership rows.
+- `task_labels`: allowed only when the requesting user owns both the
+  referenced task and label.
+- `notifications`, `activity_logs`: owner-only, insert typically via
+  trigger/service role rather than direct client insert.
+
+Migrations live in `supabase/migrations/*.sql`; applied via
+`npx supabase link --project-ref <ref>` then `npx supabase db push`.
+
+### Auth + OTP verification
+
+- **Signup:** collects name/email/password (Zod-validated) →
+  `supabase.auth.signUp()` with `full_name` in user metadata → redirect to
+  `/verify?email=...`.
+- **Email template:** Supabase's "Confirm signup" template is customized to
+  show `{{ .Token }}` (6-digit OTP) branded as FlowDo, rather than only a
+  magic link.
+- **`/verify`:** 6 individual OTP digit inputs (auto-advance, paste support),
+  countdown timer, "resend code" (disabled during cooldown; also subject to
+  Supabase's own rate limit), "change email" link back to signup, loading/
+  error/success states. Submits via
+  `supabase.auth.verifyOtp({ email, token, type: 'signup' })`.
+- **Login:** `signInWithPassword`; if the returned user has no
+  `email_confirmed_at`, redirect to `/verify` instead of the dashboard.
+- **Password reset:** `/forgot-password` → `resetPasswordForEmail()` →
+  generic "if that email exists, we've sent a link" response (never confirms
+  or denies account existence) → `/reset-password` (session established via
+  the recovery link) → `updateUser({ password })` → redirect to `/login`.
+- **Logout:** `supabase.auth.signOut()`, clears session, redirects to
+  `/login`.
+- No custom OTP table or custom password storage — entirely Supabase-native.
+
+### Dashboard shell
+
+Responsive app shell under `/app`:
+
+- Sidebar: Dashboard, Inbox, Today, Upcoming, Completed, Calendar, Projects,
+  Analytics, Settings. Collapses to a sheet/drawer on mobile.
+- Topbar: FlowDo wordmark/icon, user menu (profile, logout).
+- Each nav route renders with an honest empty state (no fabricated data) —
+  real task/project logic is Phase 2.
+- `/app/settings/profile`: edit name/avatar via `profiles` table (RLS-owned).
+- `/app/settings/security`: change password via `updateUser({ password })`.
+- FlowDo brand: simple wordmark + icon mark, usable as favicon/app icon,
+  built per `frontend-design:frontend-design` guidance — minimal, calm,
+  productivity-focused, no generic-AI-dashboard look, no gratuitous
+  gradients/glassmorphism.
+
+### Error/loading/empty states
+
+Every auth form and dashboard route gets explicit loading (skeleton/spinner),
+empty (helpful message + action where relevant), and error states (human-
+readable, no raw Postgres/Supabase error text surfaced to the user).
+
+## Testing plan
+
+- **Unit/component (Vitest + RTL):** Zod schema validation, OTP input
+  component behavior (auto-advance, paste, backspace), redirect-decision
+  logic, form error rendering.
+- **Integration (against local Supabase via CLI):**
+  - Signup creates a user + profile row.
+  - Unverified user cannot reach `/app/*` (redirected to `/verify`).
+  - OTP verification with wrong code fails; correct code verifies and
+    unlocks dashboard access.
+  - Login rejects wrong password; rejects unverified account into `/verify`.
+  - Logout clears session; protected route then redirects to `/login`.
+  - Password reset flow updates the password; old password stops working.
+  - **RLS:** user A cannot select/update/delete user B's `tasks`, `labels`,
+    or `profiles` row, even when supplying B's ID directly — verified by
+    authenticating as two distinct real users against local Supabase and
+    asserting Postgres/PostgREST denies cross-user access.
+
+## Verification before done
+
+`npm run lint`, `npm run typecheck`, `npm test`, `npm run build` all pass;
+migrations apply cleanly to a fresh local Supabase instance; manual smoke
+test of signup → OTP verify → dashboard → logout → login → forgot password →
+reset → login.
+
+## Environment variables
+
+`.env.example` documents (placeholders only, never real values):
+
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+RESEND_API_KEY=
+```
+
+Real credentials for this project go only into a local, gitignored `.env`.
+`SUPABASE_SERVICE_ROLE_KEY` and `RESEND_API_KEY` are never referenced from
+client-side code.
