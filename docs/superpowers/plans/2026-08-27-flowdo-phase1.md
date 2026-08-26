@@ -1142,6 +1142,12 @@ describe("resolveRedirect", () => {
       resolveRedirect({ pathname: "/verify", isAuthenticated: true, isVerified: false })
     ).toBeNull();
   });
+
+  it("sends an authenticated and verified user away from /verify to the dashboard", () => {
+    expect(
+      resolveRedirect({ pathname: "/verify", isAuthenticated: true, isVerified: true })
+    ).toBe("/app/dashboard");
+  });
 });
 ```
 
@@ -1170,7 +1176,7 @@ export function resolveRedirect(input: {
     return null;
   }
 
-  if (isGuestOnlyRoute && pathname !== "/verify") {
+  if (isGuestOnlyRoute) {
     if (isAuthenticated && isVerified) return "/app/dashboard";
   }
 
