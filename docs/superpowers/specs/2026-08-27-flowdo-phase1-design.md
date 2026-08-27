@@ -140,7 +140,18 @@ from `auth.uid()`, never from a client-supplied `user_id`:
   `project_members` row matching `auth.uid()` with sufficient role; only
   the owner can delete.
 - `flowdo.project_members`: visible to members of the same project; only
-  OWNER/ADMIN can insert/delete membership rows.
+  OWNER/ADMIN can insert/delete membership rows. Membership checks are
+  implemented as `SECURITY DEFINER` helper functions
+  (`flowdo.is_project_member`, `flowdo.is_project_admin`) rather than an
+  inline subquery against `project_members` from within its own policy —
+  a self-referencing policy on that table causes Postgres error 42P17
+  ("infinite recursion detected in policy"). A `SECURITY DEFINER` function
+  owned by the migration role bypasses RLS internally, breaking the cycle.
+- `flowdo.projects`: an ADMIN member can update a project but cannot
+  reassign `owner_id` — enforced by a `BEFORE UPDATE` trigger
+  (`flowdo.prevent_unauthorized_owner_change`), not RLS, since a `WITH
+  CHECK` clause only sees the proposed new row and has no way to compare
+  it against the old owner without a trigger's OLD/NEW.
 - `flowdo.task_labels`: allowed only when the requesting user owns both the
   referenced task and label.
 - `flowdo.notifications`, `flowdo.activity_logs`: owner-only, insert
