@@ -85,3 +85,74 @@ describe("RLS: profiles", () => {
     expect(data).toEqual([]);
   });
 });
+
+describe("RLS: project_members recursion guard", () => {
+  it("lets an owner and a member list projects and project_members without recursion errors", async () => {
+    const owner = await createConfirmedTestUser(admin, "rls-proj-owner@example.com", "Password123!");
+    const member = await createConfirmedTestUser(admin, "rls-proj-member@example.com", "Password123!");
+    createdUserIds.push(owner.userId, member.userId);
+
+    const { data: project, error: projectError } = await owner.client
+      .from("projects")
+      .insert({ name: "Recursion test project", owner_id: owner.userId })
+      .select()
+      .single();
+    expect(projectError).toBeNull();
+
+    const { error: memberInsertError } = await owner.client
+      .from("project_members")
+      .insert({ project_id: project!.id, user_id: member.userId, role: "MEMBER" });
+    expect(memberInsertError).toBeNull();
+
+    const { data: memberProjects, error: memberSelectError } = await member.client
+      .from("projects")
+      .select("*")
+      .eq("id", project!.id);
+    expect(memberSelectError).toBeNull();
+    expect(memberProjects?.length).toBe(1);
+
+    const { data: memberRows, error: memberRowsError } = await member.client
+      .from("project_members")
+      .select("*")
+      .eq("project_id", project!.id);
+    expect(memberRowsError).toBeNull();
+    expect(memberRows?.length).toBe(2);
+  });
+});
+
+describe("RLS: projects owner_id transfer guard", () => {
+  it("prevents a non-owner admin from reassigning owner_id, but allows other field updates", async () => {
+    const owner = await createConfirmedTestUser(admin, "rls-owner-guard@example.com", "Password123!");
+    const adminMember = await createConfirmedTestUser(admin, "rls-admin-guard@example.com", "Password123!");
+    createdUserIds.push(owner.userId, adminMember.userId);
+
+    const { data: project } = await owner.client
+      .from("projects")
+      .insert({ name: "Ownership guard project", owner_id: owner.userId })
+      .select()
+      .single();
+
+    await owner.client
+      .from("project_members")
+      .insert({ project_id: project!.id, user_id: adminMember.userId, role: "ADMIN" });
+
+    const { error: hijackError } = await adminMember.client
+      .from("projects")
+      .update({ owner_id: adminMember.userId })
+      .eq("id", project!.id);
+    expect(hijackError).toBeTruthy();
+
+    const { data: stillOwnedByOriginal } = await owner.client
+      .from("projects")
+      .select("owner_id")
+      .eq("id", project!.id)
+      .single();
+    expect(stillOwnedByOriginal?.owner_id).toBe(owner.userId);
+
+    const { error: renameError } = await adminMember.client
+      .from("projects")
+      .update({ name: "Renamed by admin" })
+      .eq("id", project!.id);
+    expect(renameError).toBeNull();
+  });
+});
