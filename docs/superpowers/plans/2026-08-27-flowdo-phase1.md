@@ -359,7 +359,7 @@ git commit -m "feat: scaffold Next.js project with Tailwind, Vitest, and FlowDo 
 
 **Interfaces:**
 - Produces: the empty `flowdo` schema (with `usage`/default-privilege grants) from `supabase/migrations/0001_create_flowdo_schema.sql` — a bootstrap migration Task 3 builds on top of; without it, `supabase start`'s PostgREST health check fails against a schema that doesn't exist yet.
-- Produces: `createAdminClient(): SupabaseClient` from `tests/helpers/admin-client.ts` — a service-role client pointed at the **local** Supabase instance, schema `flowdo`, used by every integration test task from here on to set up/tear down test users.
+- Produces: `createAdminClient()` from `tests/helpers/admin-client.ts` (return type inferred, not annotated as plain `SupabaseClient` — see Step 5's comment for why) — a service-role client pointed at the **local** Supabase instance, schema `flowdo`, used by every integration test task from here on to set up/tear down test users.
 - Produces: `LOCAL_SUPABASE_URL: string`, `LOCAL_SUPABASE_ANON_KEY: string` exported constants from the same file, read from `.env.test`.
 
 - [ ] **Step 1: Initialize the Supabase CLI project**
@@ -426,14 +426,19 @@ export const LOCAL_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 export const LOCAL_SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const LOCAL_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-export function createAdminClient(): SupabaseClient {
+// No explicit return type annotation: createClient(...)'s actual return type
+// is parameterized with the "flowdo" schema (via the db.schema option), which
+// isn't assignable to the plain SupabaseClient default (parameterized with
+// "public"). Let TypeScript infer the correct schema-parameterized type
+// instead of fighting it with a wrong annotation.
+export function createAdminClient() {
   return createClient(LOCAL_SUPABASE_URL, LOCAL_SERVICE_ROLE_KEY, {
     db: { schema: "flowdo" },
     auth: { autoRefreshToken: false, persistSession: false },
   });
 }
 
-export function createAnonClient(): SupabaseClient {
+export function createAnonClient() {
   return createClient(LOCAL_SUPABASE_URL, LOCAL_SUPABASE_ANON_KEY, {
     db: { schema: "flowdo" },
     auth: { autoRefreshToken: false, persistSession: false },
