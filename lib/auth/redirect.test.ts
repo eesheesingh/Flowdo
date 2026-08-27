@@ -43,4 +43,16 @@ describe("resolveRedirect", () => {
       resolveRedirect({ pathname: "/verify", isAuthenticated: true, isVerified: true })
     ).toBe("/app/dashboard");
   });
+
+  it("does not redirect a verified, authenticated user visiting /reset-password", () => {
+    expect(
+      resolveRedirect({ pathname: "/reset-password", isAuthenticated: true, isVerified: true })
+    ).toBeNull();
+  });
+
+  it("does not redirect a verified, authenticated user visiting /forgot-password", () => {
+    expect(
+      resolveRedirect({ pathname: "/forgot-password", isAuthenticated: true, isVerified: true })
+    ).toBeNull();
+  });
 });

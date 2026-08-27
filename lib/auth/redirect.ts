@@ -1,4 +1,4 @@
-const GUEST_ONLY_PATHS = ["/login", "/signup", "/verify", "/forgot-password", "/reset-password"];
+const GUEST_ONLY_PATHS = ["/login", "/signup", "/verify"];
 
 export function resolveRedirect(input: {
   pathname: string;
