@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -13,7 +14,7 @@ describe("OtpInput", () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     function Wrapper() {
-      const [value, setValue] = require("react").useState("");
+      const [value, setValue] = useState("");
       return (
         <OtpInput
           value={value}
