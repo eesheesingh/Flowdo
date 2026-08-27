@@ -14,12 +14,21 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
+        setAll(
+          cookiesToSet: { name: string; value: string; options: CookieOptions }[],
+          headers: Record<string, string> = {}
+        ) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           );
+          // @supabase/ssr (0.12+) passes headers (e.g. Cache-Control:
+          // no-store) to apply on the token-refresh response — this is the
+          // actual response path that reaches the browser, so apply them.
+          for (const [key, value] of Object.entries(headers)) {
+            response.headers.set(key, value);
+          }
         },
       },
     }
