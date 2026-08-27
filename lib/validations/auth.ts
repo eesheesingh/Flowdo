@@ -33,3 +33,8 @@ export const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+export const profileSchema = z.object({
+  fullName: z.string().trim().min(1, "Name is required"),
+});
+export type ProfileInput = z.infer<typeof profileSchema>;

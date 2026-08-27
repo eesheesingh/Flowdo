@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { signupSchema, loginSchema, otpSchema, resetPasswordSchema } from "./auth";
+import { signupSchema, loginSchema, otpSchema, resetPasswordSchema, profileSchema } from "./auth";
 
 describe("signupSchema", () => {
   it("accepts a valid signup", () => {
@@ -51,5 +51,15 @@ describe("resetPasswordSchema", () => {
       confirmPassword: "Different123!",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("profileSchema", () => {
+  it("accepts a non-empty name", () => {
+    expect(profileSchema.safeParse({ fullName: "Ada Lovelace" }).success).toBe(true);
+  });
+
+  it("rejects an empty name", () => {
+    expect(profileSchema.safeParse({ fullName: "" }).success).toBe(false);
   });
 });
