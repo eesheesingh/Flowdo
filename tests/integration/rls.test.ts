@@ -157,4 +157,29 @@ describe("RLS: projects owner_id transfer guard", () => {
       .eq("id", project!.id);
     expect(renameError).toBeNull();
   });
+
+  it("blocks even the current owner from changing owner_id via a plain update", async () => {
+    const owner = await createConfirmedTestUser(admin, "rls-owner-self-guard@example.com", "Password123!");
+    const otherUser = await createConfirmedTestUser(admin, "rls-owner-self-other@example.com", "Password123!");
+    createdUserIds.push(owner.userId, otherUser.userId);
+
+    const { data: project } = await owner.client
+      .from("projects")
+      .insert({ name: "Self-transfer guard project", owner_id: owner.userId })
+      .select()
+      .single();
+
+    const { error: selfTransferError } = await owner.client
+      .from("projects")
+      .update({ owner_id: otherUser.userId })
+      .eq("id", project!.id);
+    expect(selfTransferError).toBeTruthy();
+
+    const { data: stillOwnedByOriginal } = await owner.client
+      .from("projects")
+      .select("owner_id")
+      .eq("id", project!.id)
+      .single();
+    expect(stillOwnedByOriginal?.owner_id).toBe(owner.userId);
+  });
 });
