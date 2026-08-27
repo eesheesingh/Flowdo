@@ -36,7 +36,16 @@ create policy "labels_delete_own" on flowdo.labels
 -- functions run as their owner (the migration role, which owns the table
 -- and therefore bypasses its own RLS), so calling one from a policy breaks
 -- the cycle instead of re-triggering it.
-create or replace function flowdo.is_project_member(_project_id uuid, _user_id uuid)
+-- Deliberately no _user_id parameter: every call site below only ever
+-- checks the CALLING user's own membership (auth.uid()). These functions
+-- run in the exposed `flowdo` schema, so PostgREST also serves them as
+-- directly callable RPCs (/rest/v1/rpc/is_project_member) — if they took
+-- an arbitrary _user_id, any authenticated caller could probe whether some
+-- OTHER specific user is a member/admin of some project, an information
+-- leak unrelated to the caller's own access. Hardcoding auth.uid() means
+-- the RPC form can only ever answer "am I a member of project X", which
+-- is not sensitive for a caller to know about themselves.
+create or replace function flowdo.is_project_member(_project_id uuid)
 returns boolean
 language sql
 security definer
@@ -45,11 +54,11 @@ set search_path = flowdo, public
 as $$
   select exists (
     select 1 from flowdo.project_members
-    where project_id = _project_id and user_id = _user_id
+    where project_id = _project_id and user_id = auth.uid()
   );
 $$;
 
-create or replace function flowdo.is_project_admin(_project_id uuid, _user_id uuid)
+create or replace function flowdo.is_project_admin(_project_id uuid)
 returns boolean
 language sql
 security definer
@@ -58,7 +67,7 @@ set search_path = flowdo, public
 as $$
   select exists (
     select 1 from flowdo.project_members
-    where project_id = _project_id and user_id = _user_id and role in ('OWNER', 'ADMIN')
+    where project_id = _project_id and user_id = auth.uid() and role in ('OWNER', 'ADMIN')
   );
 $$;
 
@@ -86,24 +95,24 @@ create trigger prevent_unauthorized_owner_change
 create policy "projects_select_member" on flowdo.projects
   for select using (
     owner_id = auth.uid()
-    or flowdo.is_project_member(id, auth.uid())
+    or flowdo.is_project_member(id)
   );
 create policy "projects_insert_own" on flowdo.projects
   for insert with check (owner_id = auth.uid());
 create policy "projects_update_admin" on flowdo.projects
   for update using (
     owner_id = auth.uid()
-    or flowdo.is_project_admin(id, auth.uid())
+    or flowdo.is_project_admin(id)
   ) with check (
     owner_id = auth.uid()
-    or flowdo.is_project_admin(id, auth.uid())
+    or flowdo.is_project_admin(id)
   );
 create policy "projects_delete_owner" on flowdo.projects
   for delete using (owner_id = auth.uid());
 
 create policy "project_members_select_same_project" on flowdo.project_members
   for select using (
-    flowdo.is_project_member(project_id, auth.uid())
+    flowdo.is_project_member(project_id)
     or exists (
       select 1 from flowdo.projects p
       where p.id = project_members.project_id and p.owner_id = auth.uid()
@@ -115,7 +124,7 @@ create policy "project_members_insert_admin" on flowdo.project_members
       select 1 from flowdo.projects p
       where p.id = project_members.project_id and p.owner_id = auth.uid()
     )
-    or flowdo.is_project_admin(project_id, auth.uid())
+    or flowdo.is_project_admin(project_id)
   );
 create policy "project_members_delete_admin" on flowdo.project_members
   for delete using (
@@ -123,7 +132,7 @@ create policy "project_members_delete_admin" on flowdo.project_members
       select 1 from flowdo.projects p
       where p.id = project_members.project_id and p.owner_id = auth.uid()
     )
-    or flowdo.is_project_admin(project_id, auth.uid())
+    or flowdo.is_project_admin(project_id)
   );
 
 create policy "task_labels_select_own" on flowdo.task_labels

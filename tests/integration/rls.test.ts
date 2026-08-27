@@ -111,12 +111,14 @@ describe("RLS: project_members recursion guard", () => {
     expect(memberSelectError).toBeNull();
     expect(memberProjects?.length).toBe(1);
 
+    // Only the member row is expected here — the owner is tracked via
+    // projects.owner_id and is never auto-inserted into project_members.
     const { data: memberRows, error: memberRowsError } = await member.client
       .from("project_members")
       .select("*")
       .eq("project_id", project!.id);
     expect(memberRowsError).toBeNull();
-    expect(memberRows?.length).toBe(2);
+    expect(memberRows?.length).toBe(1);
   });
 });
 
