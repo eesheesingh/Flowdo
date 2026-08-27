@@ -1804,7 +1804,7 @@ git commit -m "feat: add shared auth UI primitives, OTP input, and Zod validatio
 
 **Interfaces:**
 - Consumes: `createClient()` from `lib/supabase/client.ts` (Task 5); `signupSchema` from `lib/validations/auth.ts` (Task 6); `Button`, `Input`, `Label`, `FormError` (Task 6).
-- Produces: `signUpUser(supabase: SupabaseClient, input: SignupInput): Promise<{ error: string | null }>` from `lib/auth/signup.ts` — used by the signup form and by integration tests.
+- Produces: `signUpUser(supabase: Pick<SupabaseClient, "auth">, input: SignupInput): Promise<{ error: string | null }>` from `lib/auth/signup.ts` — used by the signup form and by integration tests. The parameter type is narrowed to `Pick<SupabaseClient, "auth">` (not the full `SupabaseClient`) because this project's actual browser/server clients are typed with a schema-scoped `Database` generic (`lib/supabase/client.ts`/`server.ts`, schema `"flowdo"`), which isn't structurally assignable to the plain default-schema `SupabaseClient` type from `@supabase/supabase-js` — but `.auth` itself doesn't depend on the schema generic at all, so narrowing to just that property sidesteps the mismatch entirely. Every `lib/auth/*.ts` function below that only touches `.auth` uses this same pattern.
 
 - [ ] **Step 1: Write the failing integration test**
 
@@ -1880,7 +1880,7 @@ Expected: FAIL — `lib/auth/signup.ts` doesn't exist.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SignupInput } from "@/lib/validations/auth";
 
-export async function signUpUser(supabase: SupabaseClient, input: SignupInput) {
+export async function signUpUser(supabase: Pick<SupabaseClient, "auth">, input: SignupInput) {
   const { error } = await supabase.auth.signUp({
     email: input.email,
     password: input.password,
@@ -2030,7 +2030,7 @@ git commit -m "feat: add signup flow"
 
 **Interfaces:**
 - Consumes: `OtpInput` (Task 6), `createConfirmedTestUser`-style admin helpers (Task 4, but this task creates its own **unconfirmed** user), `createClient()` (Task 5).
-- Produces: `verifyOtpCode(supabase: SupabaseClient, email: string, code: string): Promise<{ error: string | null }>` and `resendOtpCode(supabase: SupabaseClient, email: string): Promise<{ error: string | null }>` from `lib/auth/verify.ts`.
+- Produces: `verifyOtpCode(supabase: Pick<SupabaseClient, "auth">, email: string, code: string): Promise<{ error: string | null }>` and `resendOtpCode(supabase: Pick<SupabaseClient, "auth">, email: string): Promise<{ error: string | null }>` from `lib/auth/verify.ts`. See Task 7's note on why the parameter is `Pick<SupabaseClient, "auth">`, not the full type.
 - Produces: `canResend(lastSentAt: number, now: number, cooldownMs?: number): boolean` from `lib/auth/resend-cooldown.ts`, used by the verify form and unit-tested directly.
 
 - [ ] **Step 1: Write the failing cooldown test**
@@ -2137,7 +2137,7 @@ Expected: FAIL — `lib/auth/verify.ts` doesn't exist.
 ```ts
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export async function verifyOtpCode(supabase: SupabaseClient, email: string, code: string) {
+export async function verifyOtpCode(supabase: Pick<SupabaseClient, "auth">, email: string, code: string) {
   const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "signup" });
   if (error) {
     return { error: "That code is incorrect or has expired. Please try again." };
@@ -2145,7 +2145,7 @@ export async function verifyOtpCode(supabase: SupabaseClient, email: string, cod
   return { error: null };
 }
 
-export async function resendOtpCode(supabase: SupabaseClient, email: string) {
+export async function resendOtpCode(supabase: Pick<SupabaseClient, "auth">, email: string) {
   const { error } = await supabase.auth.resend({ type: "signup", email });
   if (error) {
     return { error: "Couldn't resend the code. Please wait a moment and try again." };
@@ -2300,7 +2300,7 @@ git commit -m "feat: add 6-digit OTP email verification flow"
 
 **Interfaces:**
 - Consumes: `loginSchema` (Task 6), `createClient()` (Task 5).
-- Produces: `logInUser(supabase: SupabaseClient, input: LoginInput): Promise<{ error: string | null; needsVerification: boolean }>` from `lib/auth/login.ts`.
+- Produces: `logInUser(supabase: Pick<SupabaseClient, "auth">, input: LoginInput): Promise<{ error: string | null; needsVerification: boolean }>` from `lib/auth/login.ts`. See Task 7's note on why the parameter is `Pick<SupabaseClient, "auth">`, not the full type.
 
 - [ ] **Step 1: Write the failing integration test**
 
@@ -2384,7 +2384,7 @@ Expected: FAIL — `lib/auth/login.ts` doesn't exist.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { LoginInput } from "@/lib/validations/auth";
 
-export async function logInUser(supabase: SupabaseClient, input: LoginInput) {
+export async function logInUser(supabase: Pick<SupabaseClient, "auth">, input: LoginInput) {
   const { data, error } = await supabase.auth.signInWithPassword(input);
 
   if (error) {
@@ -2519,7 +2519,7 @@ git commit -m "feat: add login flow with unverified-account redirect"
 
 **Interfaces:**
 - Consumes: `forgotPasswordSchema`, `resetPasswordSchema` (Task 6), `createClient()` (Task 5).
-- Produces: `requestPasswordReset(supabase: SupabaseClient, email: string): Promise<{ error: null }>` (always null — never reveals whether the email exists) and `setNewPassword(supabase: SupabaseClient, password: string): Promise<{ error: string | null }>` from `lib/auth/password.ts`.
+- Produces: `requestPasswordReset(supabase: Pick<SupabaseClient, "auth">, email: string): Promise<{ error: null }>` (always null — never reveals whether the email exists) and `setNewPassword(supabase: Pick<SupabaseClient, "auth">, password: string): Promise<{ error: string | null }>` from `lib/auth/password.ts`. See Task 7's note on why the parameter is `Pick<SupabaseClient, "auth">`, not the full type.
 
 - [ ] **Step 1: Write the failing integration test**
 
@@ -2581,7 +2581,7 @@ Expected: FAIL — `lib/auth/password.ts` doesn't exist.
 ```ts
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export async function requestPasswordReset(supabase: SupabaseClient, email: string) {
+export async function requestPasswordReset(supabase: Pick<SupabaseClient, "auth">, email: string) {
   await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/reset-password`,
   });
@@ -2589,7 +2589,7 @@ export async function requestPasswordReset(supabase: SupabaseClient, email: stri
   return { error: null };
 }
 
-export async function setNewPassword(supabase: SupabaseClient, password: string) {
+export async function setNewPassword(supabase: Pick<SupabaseClient, "auth">, password: string) {
   const { error } = await supabase.auth.updateUser({ password });
   if (error) {
     return { error: "Couldn't update your password. The reset link may have expired." };
@@ -2785,8 +2785,8 @@ git commit -m "feat: add forgot/reset password flow"
 
 **Interfaces:**
 - Consumes: `createClient()` (Task 5), `createServerClient()` (Task 5), `setNewPassword` (Task 10).
-- Produces: `logOutUser(supabase: SupabaseClient): Promise<void>` from `lib/auth/logout.ts`, used by the dashboard shell's user menu (Task 12).
-- Produces: `updateProfile(supabase: SupabaseClient, userId: string, input: { fullName: string }): Promise<{ error: string | null }>` from `lib/auth/profile.ts`.
+- Produces: `logOutUser(supabase: Pick<SupabaseClient, "auth">): Promise<void>` from `lib/auth/logout.ts`, used by the dashboard shell's user menu (Task 12). See Task 7's note on why the parameter is `Pick<SupabaseClient, "auth">`, not the full type.
+- Produces: `updateProfile(supabase: SupabaseClient<Database, "flowdo">, userId: string, input: { fullName: string }): Promise<{ error: string | null }>` from `lib/auth/profile.ts`. Unlike the `Pick<SupabaseClient, "auth">` functions above, this one calls `.from("profiles")`, so it needs the actual schema-typed client, not just `.auth` — import `Database` from `@/types/database` alongside `SupabaseClient`.
 
 - [ ] **Step 1: Write the failing integration test**
 
@@ -2837,9 +2837,10 @@ Expected: FAIL — `lib/auth/profile.ts` doesn't exist.
 
 ```ts
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
 
 export async function updateProfile(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database, "flowdo">,
   userId: string,
   input: { fullName: string }
 ) {
@@ -2865,7 +2866,7 @@ Expected: PASS.
 ```ts
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export async function logOutUser(supabase: SupabaseClient) {
+export async function logOutUser(supabase: Pick<SupabaseClient, "auth">) {
   await supabase.auth.signOut();
 }
 ```
