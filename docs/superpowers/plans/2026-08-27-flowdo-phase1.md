@@ -320,8 +320,16 @@ export default defineConfig({
 
 - [ ] **Step 14: Write `vitest.setup.ts`**
 
+Without `globals: true` in `vitest.config.ts` (this project doesn't set it — tests explicitly import `describe`/`it`/`expect`), React Testing Library's automatic per-test DOM cleanup doesn't self-register, since it hooks into a global `afterEach` that isn't present. Register it explicitly, or component tests will leak DOM state across test cases:
+
 ```ts
 import "@testing-library/jest-dom/vitest";
+import { afterEach } from "vitest";
+import { cleanup } from "@testing-library/react";
+
+afterEach(() => {
+  cleanup();
+});
 ```
 
 - [ ] **Step 15: Write `.env.example`**
