@@ -1235,11 +1235,18 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, _headers) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             );
+            // @supabase/ssr (0.12+) passes a second `headers` argument on the
+            // token-refresh path (e.g. Cache-Control: no-store) meant to be
+            // applied to the HTTP response. Server Components can't set
+            // response headers directly — only Route Handlers/Middleware can
+            // — so there's nothing to do with it here; middleware.ts is the
+            // actual path that refreshes and persists the session, and it
+            // does apply these headers.
           } catch {
             // called from a Server Component render; middleware refreshes the session instead
           }
@@ -1360,12 +1367,18 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, headers = {}) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           );
+          // @supabase/ssr (0.12+) passes headers (e.g. Cache-Control:
+          // no-store) to apply on the token-refresh response — this is the
+          // actual response path that reaches the browser, so apply them.
+          for (const [key, value] of Object.entries(headers)) {
+            response.headers.set(key, value);
+          }
         },
       },
     }
