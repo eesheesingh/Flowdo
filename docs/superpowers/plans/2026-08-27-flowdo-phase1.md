@@ -389,10 +389,12 @@ create schema if not exists flowdo;
 
 grant usage on schema flowdo to anon, authenticated, service_role;
 alter default privileges in schema flowdo
-  grant select, insert, update, delete on tables to anon, authenticated;
+  grant select, insert, update, delete on tables to anon, authenticated, service_role;
 alter default privileges in schema flowdo
-  grant usage, select on sequences to anon, authenticated;
+  grant usage, select on sequences to anon, authenticated, service_role;
 ```
+
+`service_role` needs the same table/sequence grants as `anon`/`authenticated` — it bypasses RLS policies, but bypassing RLS is a separate mechanism from the SQL `GRANT` system, and without an explicit grant on this custom schema, service-role queries via `.from(...)` still fail with `42501`. (This gap was originally missed here and only caught later, during Task 4's RLS review, once something actually tried a service-role table read against `flowdo` — noted here since this is the file it belongs in.)
 
 - [ ] **Step 4: Start local Supabase**
 
@@ -1036,25 +1038,34 @@ as $$
 $$;
 
 -- RLS's WITH CHECK only sees the proposed new row, not the old one, so it
--- cannot by itself stop an ADMIN (non-owner) from reassigning owner_id while
--- otherwise legitimately updating a project. A trigger has both OLD and NEW.
-create or replace function flowdo.prevent_unauthorized_owner_change()
+-- cannot by itself stop owner_id from being reassigned via an ordinary
+-- UPDATE. There is no ownership-transfer feature in this phase (project
+-- collaboration ships in a later phase per the roadmap), so this trigger
+-- blocks ANY owner_id change outright, for anyone, including the current
+-- owner — not just admins. (An earlier version of this trigger tried to
+-- carve out an exception letting the current owner transfer ownership, but
+-- projects_update_admin's own WITH CHECK independently requires
+-- `owner_id = auth.uid() or is_project_admin(id)`, which already rejects
+-- any owner_id change to a different user regardless of who's asking — so
+-- that exception was dead code with a misleading error message. Simplified
+-- here rather than building out a real transfer feature nothing needs yet.)
+create or replace function flowdo.prevent_owner_id_change()
 returns trigger
 language plpgsql
 security definer
 set search_path = flowdo, public
 as $$
 begin
-  if new.owner_id is distinct from old.owner_id and old.owner_id <> auth.uid() then
-    raise exception 'Only the current project owner can transfer ownership';
+  if new.owner_id is distinct from old.owner_id then
+    raise exception 'Project ownership cannot be changed directly';
   end if;
   return new;
 end;
 $$;
 
-create trigger prevent_unauthorized_owner_change
+create trigger prevent_owner_id_change
   before update on flowdo.projects
-  for each row execute function flowdo.prevent_unauthorized_owner_change();
+  for each row execute function flowdo.prevent_owner_id_change();
 
 create policy "projects_select_member" on flowdo.projects
   for select using (

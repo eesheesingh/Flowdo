@@ -139,19 +139,28 @@ from `auth.uid()`, never from a client-supplied `user_id`:
 - `flowdo.projects`: select/update allowed for the owner or any
   `project_members` row matching `auth.uid()` with sufficient role; only
   the owner can delete.
-- `flowdo.project_members`: visible to members of the same project; only
-  OWNER/ADMIN can insert/delete membership rows. Membership checks are
-  implemented as `SECURITY DEFINER` helper functions
-  (`flowdo.is_project_member`, `flowdo.is_project_admin`) rather than an
-  inline subquery against `project_members` from within its own policy —
-  a self-referencing policy on that table causes Postgres error 42P17
-  ("infinite recursion detected in policy"). A `SECURITY DEFINER` function
-  owned by the migration role bypasses RLS internally, breaking the cycle.
-- `flowdo.projects`: an ADMIN member can update a project but cannot
-  reassign `owner_id` — enforced by a `BEFORE UPDATE` trigger
-  (`flowdo.prevent_unauthorized_owner_change`), not RLS, since a `WITH
-  CHECK` clause only sees the proposed new row and has no way to compare
-  it against the old owner without a trigger's OLD/NEW.
+- `flowdo.project_members`: visible to members of the same project or the
+  project's owner; only OWNER/ADMIN can insert/delete membership rows (no
+  update policy — role changes aren't a Phase 1 feature). Membership checks
+  are implemented as `SECURITY DEFINER` helper functions
+  (`flowdo.is_project_member(_project_id)`, `flowdo.is_project_admin(_project_id)`)
+  rather than an inline subquery against `project_members` from within its
+  own policy — a self-referencing policy on that table causes Postgres
+  error 42P17 ("infinite recursion detected in policy"). A `SECURITY
+  DEFINER` function owned by the migration role bypasses RLS internally,
+  breaking the cycle. Both functions take no `_user_id` parameter and
+  hardcode `auth.uid()` internally: they live in the exposed `flowdo`
+  schema, so PostgREST also serves them as directly callable RPCs, and an
+  arbitrary `_user_id` parameter would let any authenticated caller probe
+  an unrelated user's membership in an unrelated project.
+- `flowdo.projects`: `owner_id` can never be changed via a plain `UPDATE`,
+  by anyone including the current owner — enforced by a `BEFORE UPDATE`
+  trigger (`flowdo.prevent_owner_id_change`), not RLS, since a `WITH CHECK`
+  clause only sees the proposed new row and has no way to compare it
+  against the old owner without a trigger's OLD/NEW. There's no ownership-
+  transfer feature yet (project collaboration ships in a later phase), so
+  the trigger blocks the column outright rather than trying to special-case
+  who's allowed to change it.
 - `flowdo.task_labels`: allowed only when the requesting user owns both the
   referenced task and label.
 - `flowdo.notifications`, `flowdo.activity_logs`: owner-only, insert
