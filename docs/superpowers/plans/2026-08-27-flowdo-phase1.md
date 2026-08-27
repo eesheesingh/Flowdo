@@ -2398,6 +2398,14 @@ export async function logInUser(supabase: Pick<SupabaseClient, "auth">, input: L
   const { data, error } = await supabase.auth.signInWithPassword(input);
 
   if (error) {
+    // With auth.email.enable_confirmations = true (required for the OTP
+    // verification flow — see Task 7), Supabase rejects sign-in for an
+    // unconfirmed account with this specific error code instead of letting
+    // it through with an unconfirmed user object. Treat it as "needs
+    // verification", not a login failure.
+    if (error.code === "email_not_confirmed") {
+      return { error: null, needsVerification: true };
+    }
     return { error: "Incorrect email or password.", needsVerification: false };
   }
 
