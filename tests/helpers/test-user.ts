@@ -1,8 +1,7 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { createAnonClient } from "./admin-client";
+import { createAnonClient, type createAdminClient } from "./admin-client";
 
 export async function createConfirmedTestUser(
-  admin: SupabaseClient,
+  admin: ReturnType<typeof createAdminClient>,
   email: string,
   password: string
 ) {
