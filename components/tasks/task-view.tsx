@@ -83,6 +83,7 @@ export function TaskView({
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["tasks", viewKey] });
+    router.refresh();
   }
 
   function reportError(result: { error: string | null }) {
