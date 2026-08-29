@@ -9,6 +9,14 @@ export async function requestPasswordReset(supabase: Pick<SupabaseClient, "auth"
   // falling back to site_url and breaking the whole reset flow) and would
   // drift from reality across dev/staging/prod. Deriving it from the actual
   // page origin always matches wherever the app is actually being served.
+  //
+  // NOTE: this `redirectTo` value is currently inert for the actual emailed
+  // link. The custom recovery.html template's link is built entirely from
+  // `{{ .SiteURL }}/auth/confirm?...&next=/reset-password` and never
+  // references `{{ .RedirectTo }}` (or `{{ .ConfirmationURL }}`), so nothing
+  // here currently controls where the recovery email points. Left in place
+  // as harmless — it'll matter again if a future template change
+  // reintroduces `{{ .RedirectTo }}`/`{{ .ConfirmationURL }}` usage.
   await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${window.location.origin}/reset-password`,
   });

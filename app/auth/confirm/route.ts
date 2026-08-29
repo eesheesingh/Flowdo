@@ -19,9 +19,25 @@ type AllowedType = (typeof ALLOWED_TYPES)[number];
 // route exists to provide. Deriving the origin from the incoming
 // Host/X-Forwarded-Host header instead keeps the redirect on the same host
 // the session cookie was just set for.
+//
+// That header is client-suppliable, though, so it is now checked against an
+// allow-list (ALLOWED_HOSTS) rather than trusted unconditionally — a bare
+// Host/X-Forwarded-Host passthrough is a classic Host-header-injection
+// vector, and would become a live open-redirect risk the moment this app
+// sits behind a reverse proxy/CDN that doesn't strip client-supplied
+// X-Forwarded-Host. An unrecognized host falls back to request.url's own
+// host instead of trusting the header blindly.
+const ALLOWED_HOSTS = new Set(
+  (process.env.ALLOWED_HOSTS ?? "127.0.0.1:3000,localhost:3000")
+    .split(",")
+    .map((h) => h.trim())
+    .filter(Boolean)
+);
+
 function resolveOrigin(request: NextRequest): string {
   const url = new URL(request.url);
-  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? url.host;
+  const candidate = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const host = candidate && ALLOWED_HOSTS.has(candidate) ? candidate : url.host;
   return `${url.protocol}//${host}`;
 }
 
@@ -30,7 +46,13 @@ export async function GET(request: NextRequest) {
   const origin = resolveOrigin(request);
   const tokenHash = searchParams.get("token_hash");
   const typeParam = searchParams.get("type");
-  const next = searchParams.get("next") ?? "/app/dashboard";
+  // Reject anything but a plain same-site relative path: `//evil.com` is
+  // protocol-relative and would redirect off-site, and an absolute URL would
+  // too. This is currently only accidentally safe (the value is string-
+  // concatenated onto `origin` below) rather than deliberately validated —
+  // this check makes that safety explicit as defense in depth.
+  const rawNext = searchParams.get("next") ?? "/app/dashboard";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/app/dashboard";
 
   if (tokenHash && typeParam && (ALLOWED_TYPES as readonly string[]).includes(typeParam)) {
     const supabase = await createClient();
