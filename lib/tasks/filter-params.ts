@@ -2,7 +2,7 @@ import type { ListTasksFilters } from "./tasks";
 
 const STATUSES = ["TODO", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const;
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
-const SORTS = ["due_date", "priority", "created_at", "alphabetical", "manual"] as const;
+const SORTS = ["due_date", "priority", "created_at", "alphabetical", "manual", "completed_at"] as const;
 
 export type UserFilterParams = Pick<ListTasksFilters, "status" | "priority" | "search" | "sort">;
 
@@ -43,8 +43,8 @@ export function buildFullFilters<T extends Record<string, unknown>>(
   const userFilters = parseFilterParams(rawParams);
   const projectParam = rawParams.project;
   return {
-    ...baseFilters,
     ...userFilters,
     ...(typeof projectParam === "string" ? { projectId: projectParam } : {}),
+    ...baseFilters,
   };
 }

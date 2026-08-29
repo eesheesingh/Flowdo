@@ -10,6 +10,18 @@ const PRIORITY_LABEL: Record<TaskRowData["priority"], string> = {
   URGENT: "Urgent",
 };
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// due_date is stored as UTC midnight. Formatting with the viewer's local
+// timezone (e.g. toLocaleDateString) can render the previous calendar day
+// for negative UTC offsets, and resolves differently between SSR and the
+// browser - a hydration-mismatch risk. Reading UTC components directly keeps
+// every viewer (and both render passes) on the same calendar date.
+function formatDueDate(dueDate: string): string {
+  const d = new Date(dueDate);
+  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
+}
+
 export function TaskRow({
   task,
   onOpen,
@@ -59,7 +71,7 @@ export function TaskRow({
       )}
       {task.due_date && (
         <span className="shrink-0 text-xs text-muted-foreground">
-          {new Date(task.due_date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+          {formatDueDate(task.due_date)}
         </span>
       )}
     </div>

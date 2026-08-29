@@ -29,6 +29,11 @@ describe("buildFullFilters", () => {
     expect(result.projectId).toBe("abc-123");
   });
 
+  it("never lets a URL-supplied status override a base filter's status (regression: Completed view could be made to show non-completed tasks)", () => {
+    const result = buildFullFilters({ status: "COMPLETED" }, { status: "TODO" });
+    expect(result).toEqual({ status: "COMPLETED" });
+  });
+
   it("still merges status/priority/search/sort via parseFilterParams", () => {
     const result = buildFullFilters(
       { excludeCompleted: true },

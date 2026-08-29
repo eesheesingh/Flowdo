@@ -38,7 +38,7 @@ export function TaskDetailPanel({
     values: {
       title: task.title,
       description: task.description ?? undefined,
-      dueDate: task.due_date ?? undefined,
+      dueDate: task.due_date ? task.due_date.slice(0, 10) : undefined,
       priority: task.priority,
       projectId: task.project_id ?? undefined,
     },
@@ -116,6 +116,13 @@ export function TaskDetailPanel({
                 className="flex h-10 w-full rounded-md border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <option value="">No project (Inbox)</option>
+                {task.project_id && !projects.some((project) => project.id === task.project_id) && (
+                  // The task's project isn't in `projects` (listProjects() excludes archived
+                  // projects by default), so without this fallback option the select would
+                  // silently fall back to "No project (Inbox)" for an archived project's task.
+                  // We don't have the archived project's name here, so label it generically.
+                  <option value={task.project_id}>Archived project</option>
+                )}
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}

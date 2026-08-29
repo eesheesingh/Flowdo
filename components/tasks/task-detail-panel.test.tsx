@@ -101,7 +101,7 @@ describe("TaskDetailPanel", () => {
   it("clears an existing due date to null (not undefined) when the date input is emptied", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn().mockResolvedValue(undefined);
-    const taskWithDueDate = { ...baseTask, due_date: "2026-02-01" };
+    const taskWithDueDate = { ...baseTask, due_date: "2026-02-01T00:00:00+00:00" };
     render(
       <TaskDetailPanel
         task={taskWithDueDate}
@@ -118,5 +118,21 @@ describe("TaskDetailPanel", () => {
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     expect(onSave).toHaveBeenCalledWith("1", expect.objectContaining({ dueDate: null }));
+  });
+
+  it("prefills the due date input with just the YYYY-MM-DD portion of a timestamptz value (regression: full ISO timestamp renders as a blank native date input)", () => {
+    const taskWithDueDate = { ...baseTask, due_date: "2026-02-01T00:00:00+00:00" };
+    render(
+      <TaskDetailPanel
+        task={taskWithDueDate}
+        projects={[]}
+        open={true}
+        onOpenChange={vi.fn()}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    expect(screen.getByLabelText(/due date/i)).toHaveValue("2026-02-01");
   });
 });

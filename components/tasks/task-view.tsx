@@ -38,15 +38,19 @@ export function TaskView({
   emptyState,
   enableReorder = false,
   showProjectFilter = false,
+  hideStatusFilter = false,
+  hideManualSort = false,
 }: {
   initialTasks: TaskRowData[];
   projects: ProjectRowData[];
   userId: string;
-  baseFilters: Omit<ListTasksFilters, "priority" | "search" | "sort">;
+  baseFilters: Omit<ListTasksFilters, "priority" | "search">;
   viewKey: string;
   emptyState: { default: EmptyStateCopy; filtered: EmptyStateCopy };
   enableReorder?: boolean;
   showProjectFilter?: boolean;
+  hideStatusFilter?: boolean;
+  hideManualSort?: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -125,7 +129,7 @@ export function TaskView({
     if (next.search) params.set("q", next.search);
     if (next.sort) params.set("sort", next.sort);
     if (next.projectId) params.set("project", next.projectId);
-    router.push(`?${params.toString()}`, { scroll: false });
+    router.replace(`?${params.toString()}`, { scroll: false });
   }
 
   const activeEmptyState = hasActiveFilter ? emptyState.filtered : emptyState.default;
@@ -147,6 +151,8 @@ export function TaskView({
         onChange={updateUrlFilters}
         projects={projects}
         showProjectFilter={showProjectFilter}
+        hideStatusFilter={hideStatusFilter}
+        hideManualSort={hideManualSort}
       />
       <TaskList
         tasks={tasks ?? []}

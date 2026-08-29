@@ -14,7 +14,7 @@ export default async function CompletedPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const baseFilters = { status: "COMPLETED" } as const;
+  const baseFilters = { status: "COMPLETED", sort: "completed_at" } as const;
   const fullFilters = buildFullFilters(baseFilters, searchParams);
   const [{ data: tasks }, { data: projects }] = await Promise.all([
     listTasks(supabase, fullFilters),
@@ -35,6 +35,8 @@ export default async function CompletedPage({
           filtered: { title: "No completed tasks match your filters", description: "Try clearing a filter or search term." },
         }}
         showProjectFilter
+        hideStatusFilter
+        hideManualSort
       />
     </div>
   );

@@ -32,6 +32,19 @@ describe("createTask", () => {
     expect(data?.user_id).toBe(owner.userId);
   });
 
+  it("gives back-to-back created tasks distinct, increasing positions (regression: fresh tasks used to all default to position 0)", async () => {
+    const owner = await createConfirmedTestUser(admin, "tasks-position-seed@example.com", "Password123!");
+    createdUserIds.push(owner.userId);
+
+    const { data: first } = await createTask(owner.client, owner.userId, { title: "First" });
+    const { data: second } = await createTask(owner.client, owner.userId, { title: "Second" });
+
+    expect(first?.position).not.toBe(0);
+    expect(second?.position).not.toBe(0);
+    expect(first?.position).not.toBe(second?.position);
+    expect(second!.position).toBeGreaterThan(first!.position);
+  });
+
   it("a different user cannot see or modify the task (RLS through the application layer)", async () => {
     const owner = await createConfirmedTestUser(admin, "tasks-owner@example.com", "Password123!");
     const attacker = await createConfirmedTestUser(admin, "tasks-attacker@example.com", "Password123!");

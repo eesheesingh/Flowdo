@@ -13,9 +13,12 @@ export function QuickAdd({ onCreate }: { onCreate: (title: string) => Promise<vo
     if (!trimmed || isSubmitting) return;
 
     setIsSubmitting(true);
-    await onCreate(trimmed);
-    setTitle("");
-    setIsSubmitting(false);
+    try {
+      await onCreate(trimmed);
+      setTitle("");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (

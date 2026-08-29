@@ -25,6 +25,7 @@ export async function createTask(supabase: Client, userId: string, input: TaskIn
       due_date: input.dueDate ?? null,
       priority: input.priority ?? "MEDIUM",
       project_id: input.projectId ?? null,
+      position: Date.now(),
     })
     .select()
     .single();
@@ -85,7 +86,8 @@ export interface ListTasksFilters {
   status?: TaskStatus;
   priority?: TaskPriority;
   search?: string;
-  sort?: "due_date" | "priority" | "created_at" | "alphabetical" | "manual";
+  sort?: "due_date" | "priority" | "created_at" | "alphabetical" | "manual" | "completed_at";
+  limit?: number;
 }
 
 export async function listTasks(supabase: Client, filters: ListTasksFilters) {
@@ -137,8 +139,15 @@ export async function listTasks(supabase: Client, filters: ListTasksFilters) {
     case "due_date":
       query = query.order("due_date", { ascending: true, nullsFirst: false });
       break;
+    case "completed_at":
+      query = query.order("completed_at", { ascending: false, nullsFirst: false });
+      break;
     default:
-      query = query.order("position", { ascending: true });
+      query = query.order("position", { ascending: true }).order("created_at", { ascending: true });
+  }
+
+  if (filters.limit !== undefined) {
+    query = query.limit(filters.limit);
   }
 
   const { data, error } = await query;

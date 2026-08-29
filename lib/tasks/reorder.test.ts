@@ -17,4 +17,8 @@ describe("calculateNewPosition", () => {
   it("returns 0 when the list is empty (no neighbors at all)", () => {
     expect(calculateNewPosition(null, null)).toBe(0);
   });
+
+  it("returns the tied midpoint when both neighbors share the same position (documents current behavior; ties should no longer occur once new tasks get distinct Date.now() seeded positions)", () => {
+    expect(calculateNewPosition(0, 0)).toBe(0);
+  });
 });

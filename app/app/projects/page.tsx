@@ -8,14 +8,15 @@ import { FolderKanban } from "lucide-react";
 
 export default async function ProjectsPage() {
   const supabase = await createClient();
-  const { data: projects } = await listProjects(supabase);
+  const [{ data: projects }, { data: allTasks }] = await Promise.all([
+    listProjects(supabase),
+    listTasks(supabase, { excludeCompleted: true }),
+  ]);
 
-  const projectsWithCounts = await Promise.all(
-    (projects ?? []).map(async (project) => {
-      const { data: tasks } = await listTasks(supabase, { projectId: project.id, excludeCompleted: true });
-      return { project, taskCount: tasks?.length ?? 0 };
-    })
-  );
+  const projectsWithCounts = (projects ?? []).map((project) => ({
+    project,
+    taskCount: (allTasks ?? []).filter((t) => t.project_id === project.id).length,
+  }));
 
   return (
     <div className="space-y-6">

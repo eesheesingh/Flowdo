@@ -48,4 +48,15 @@ describe("TaskRow", () => {
     );
     expect(screen.getByRole("checkbox")).toBeChecked();
   });
+
+  it("formats the due date using UTC calendar components (regression: local-timezone formatting could show the previous day and risked SSR/client hydration mismatches)", () => {
+    render(
+      <TaskRow
+        task={{ ...baseTask, due_date: "2026-01-31T00:00:00.000Z" }}
+        onOpen={vi.fn()}
+        onToggleComplete={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Jan 31")).toBeInTheDocument();
+  });
 });

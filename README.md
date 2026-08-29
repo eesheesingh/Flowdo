@@ -111,3 +111,9 @@ Phase 2 (tasks, projects, search/filtering/sorting, drag-and-drop ordering)
 is complete: full verification (`npm run lint`, `npm run typecheck`,
 `npm test`, `npm run test:integration`, `npm run build`) passes. See
 "Task & project management" above for the architecture.
+
+Known flake: `tests/integration/profile.test.ts` occasionally fails when the
+full integration suite runs with its default concurrency (it passes
+reliably in isolation). This is pre-existing and out of scope for the
+Phase 2 fix wave; if you see exactly that one failure, re-run
+`npm run test:integration` to confirm it clears.
