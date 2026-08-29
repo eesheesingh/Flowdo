@@ -32,6 +32,21 @@ describe("TaskFilters", () => {
     expect(screen.queryByRole("option", { name: /manual order/i })).not.toBeInTheDocument();
   });
 
+  it("disables the sort control and shows only Completion date when hideManualSort is true", () => {
+    const onChange = vi.fn();
+    render(<TaskFilters currentFilters={{}} onChange={onChange} projects={[]} hideManualSort />);
+
+    const sortControl = screen.getByLabelText(/^sort$/i);
+    expect(sortControl).toBeDisabled();
+    expect(screen.getByRole("option", { name: /completion date/i })).toBeInTheDocument();
+
+    // None of the other sort options should be present, even as dead/inert options.
+    expect(screen.queryByRole("option", { name: /^due date$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /^priority$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /^created date$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /^alphabetical$/i })).not.toBeInTheDocument();
+  });
+
   it("calls onChange with the selected priority", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

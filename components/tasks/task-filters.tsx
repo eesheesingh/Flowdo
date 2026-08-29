@@ -96,19 +96,33 @@ export function TaskFilters({
         </select>
       )}
 
-      <select
-        aria-label="Sort"
-        value={currentFilters.sort ?? (hideManualSort ? "completed_at" : "manual")}
-        onChange={(e) => onChange({ ...currentFilters, sort: e.target.value as UserFilterParams["sort"] })}
-        className="h-10 rounded-md border border-border bg-background px-2 text-sm"
-      >
-        {!hideManualSort && <option value="manual">Manual order</option>}
-        {hideManualSort && <option value="completed_at">Completion date</option>}
-        <option value="due_date">Due date</option>
-        <option value="priority">Priority</option>
-        <option value="created_at">Created date</option>
-        <option value="alphabetical">Alphabetical</option>
-      </select>
+      {hideManualSort ? (
+        // Completed view: sorting is always by completion date and cannot be
+        // changed, so render a disabled control with only that one option
+        // instead of a dropdown full of options that silently do nothing.
+        <select
+          aria-label="Sort"
+          value="completed_at"
+          disabled
+          onChange={() => {}}
+          className="h-10 rounded-md border border-border bg-background px-2 text-sm text-muted-foreground disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          <option value="completed_at">Completion date</option>
+        </select>
+      ) : (
+        <select
+          aria-label="Sort"
+          value={currentFilters.sort ?? "manual"}
+          onChange={(e) => onChange({ ...currentFilters, sort: e.target.value as UserFilterParams["sort"] })}
+          className="h-10 rounded-md border border-border bg-background px-2 text-sm"
+        >
+          <option value="manual">Manual order</option>
+          <option value="due_date">Due date</option>
+          <option value="priority">Priority</option>
+          <option value="created_at">Created date</option>
+          <option value="alphabetical">Alphabetical</option>
+        </select>
+      )}
     </div>
   );
 }
