@@ -10,9 +10,9 @@ type Client = SupabaseClient<Database, "flowdo">;
 export interface TaskInputLike {
   title: string;
   description?: string;
-  dueDate?: string;
+  dueDate?: string | null;
   priority?: TaskPriority;
-  projectId?: string;
+  projectId?: string | null;
 }
 
 export async function createTask(supabase: Client, userId: string, input: TaskInputLike) {

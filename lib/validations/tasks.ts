@@ -3,9 +3,9 @@ import { z } from "zod";
 export const taskSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
   description: z.string().trim().optional(),
-  dueDate: z.string().optional(),
+  dueDate: z.string().optional().nullable(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
-  projectId: z.string().uuid().optional(),
+  projectId: z.string().uuid().optional().nullable(),
 });
 export type TaskInput = z.infer<typeof taskSchema>;
 

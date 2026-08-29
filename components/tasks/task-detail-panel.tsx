@@ -83,7 +83,13 @@ export function TaskDetailPanel({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="dueDate">Due date</Label>
-                <Input id="dueDate" type="date" {...register("dueDate")} />
+                <Input
+                  id="dueDate"
+                  type="date"
+                  {...register("dueDate", {
+                    setValueAs: (value: string) => (value === "" ? null : value),
+                  })}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="priority">Priority</Label>
@@ -105,7 +111,7 @@ export function TaskDetailPanel({
               <select
                 id="projectId"
                 {...register("projectId", {
-                  setValueAs: (value: string) => (value === "" ? undefined : value),
+                  setValueAs: (value: string) => (value === "" ? null : value),
                 })}
                 className="flex h-10 w-full rounded-md border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
