@@ -1,7 +1,15 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { createAdminClient } from "../helpers/admin-client";
 import { createConfirmedTestUser } from "../helpers/test-user";
-import { createTask, updateTask, deleteTask, completeTask, reopenTask, listTasks } from "@/lib/tasks/tasks";
+import {
+  createTask,
+  updateTask,
+  deleteTask,
+  completeTask,
+  reopenTask,
+  listTasks,
+  updateTaskPosition,
+} from "@/lib/tasks/tasks";
 
 const admin = createAdminClient();
 const createdUserIds: string[] = [];
@@ -135,5 +143,74 @@ describe("listTasks filters", () => {
 
     const { data: sorted } = await listTasks(owner.client, { sort: "alphabetical" });
     expect(sorted?.map((t) => t.title)).toEqual(["Apple task", "Unrelated", "Zebra task"]);
+  });
+
+  it("sorts by priority highest-first (enum declaration order, not alphabetical)", async () => {
+    const owner = await createConfirmedTestUser(admin, "tasks-sort-priority@example.com", "Password123!");
+    createdUserIds.push(owner.userId);
+
+    // Created in a scrambled order so the result can't accidentally match
+    // insertion order or alphabetical order.
+    await createTask(owner.client, owner.userId, { title: "Medium task", priority: "MEDIUM" });
+    await createTask(owner.client, owner.userId, { title: "Urgent task", priority: "URGENT" });
+    await createTask(owner.client, owner.userId, { title: "Low task", priority: "LOW" });
+    await createTask(owner.client, owner.userId, { title: "High task", priority: "HIGH" });
+
+    const { data: sorted } = await listTasks(owner.client, { sort: "priority" });
+    expect(sorted?.map((t) => t.priority)).toEqual(["URGENT", "HIGH", "MEDIUM", "LOW"]);
+  });
+
+  it("sorts by due_date ascending with nulls last", async () => {
+    const owner = await createConfirmedTestUser(admin, "tasks-sort-duedate@example.com", "Password123!");
+    createdUserIds.push(owner.userId);
+
+    const soon = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString();
+    const later = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+
+    await createTask(owner.client, owner.userId, { title: "No due date" });
+    await createTask(owner.client, owner.userId, { title: "Later", dueDate: later });
+    await createTask(owner.client, owner.userId, { title: "Soon", dueDate: soon });
+
+    const { data: sorted } = await listTasks(owner.client, { sort: "due_date" });
+    expect(sorted?.map((t) => t.title)).toEqual(["Soon", "Later", "No due date"]);
+  });
+
+  it("sorts by created_at descending (most recently created first)", async () => {
+    const owner = await createConfirmedTestUser(admin, "tasks-sort-created@example.com", "Password123!");
+    createdUserIds.push(owner.userId);
+
+    const { data: first } = await createTask(owner.client, owner.userId, { title: "First" });
+    const { data: second } = await createTask(owner.client, owner.userId, { title: "Second" });
+
+    const { data: sorted } = await listTasks(owner.client, { sort: "created_at" });
+    const firstIndex = sorted!.findIndex((t) => t.id === first!.id);
+    const secondIndex = sorted!.findIndex((t) => t.id === second!.id);
+    expect(secondIndex).toBeLessThan(firstIndex);
+  });
+
+  it("filters to tasks with no due date via dueDate: 'none'", async () => {
+    const owner = await createConfirmedTestUser(admin, "tasks-duedate-none@example.com", "Password123!");
+    createdUserIds.push(owner.userId);
+
+    await createTask(owner.client, owner.userId, { title: "Has due date", dueDate: new Date().toISOString() });
+    await createTask(owner.client, owner.userId, { title: "No due date" });
+
+    const { data: noDueDateResults } = await listTasks(owner.client, { dueDate: "none" });
+    expect(noDueDateResults?.map((t) => t.title)).toEqual(["No due date"]);
+  });
+});
+
+describe("updateTaskPosition", () => {
+  it("updates a task's position", async () => {
+    const owner = await createConfirmedTestUser(admin, "tasks-position@example.com", "Password123!");
+    createdUserIds.push(owner.userId);
+
+    const { data: task } = await createTask(owner.client, owner.userId, { title: "Reorder me" });
+    const { error } = await updateTaskPosition(owner.client, task!.id, 42);
+    expect(error).toBeNull();
+
+    const { data: afterUpdate } = await listTasks(owner.client, {});
+    const updated = afterUpdate?.find((t) => t.id === task!.id);
+    expect(updated?.position).toBe(42);
   });
 });
