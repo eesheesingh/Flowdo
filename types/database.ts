@@ -12,18 +12,45 @@ export type Database = {
         };
         Insert: Partial<Database["flowdo"]["Tables"]["profiles"]["Row"]> & { id: string; email: string };
         Update: Partial<Database["flowdo"]["Tables"]["profiles"]["Row"]>;
-        // Required by @supabase/supabase-js's GenericTable constraint (Row & Insert &
-        // Update & Relationships). We have no foreign-key relationships to describe yet.
+        Relationships: [];
+      };
+      tasks: {
+        Row: {
+          id: string;
+          user_id: string;
+          project_id: string | null;
+          parent_task_id: string | null;
+          title: string;
+          description: string | null;
+          status: "TODO" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+          priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+          due_date: string | null;
+          completed_at: string | null;
+          position: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["flowdo"]["Tables"]["tasks"]["Row"]> & { user_id: string; title: string };
+        Update: Partial<Database["flowdo"]["Tables"]["tasks"]["Row"]>;
+        Relationships: [];
+      };
+      projects: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          color: string;
+          icon: string | null;
+          owner_id: string;
+          status: "ACTIVE" | "ARCHIVED";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["flowdo"]["Tables"]["projects"]["Row"]> & { owner_id: string; name: string };
+        Update: Partial<Database["flowdo"]["Tables"]["projects"]["Row"]>;
         Relationships: [];
       };
     };
-    // Views and Functions are required (even empty) to satisfy @supabase/supabase-js's
-    // GenericSchema constraint (`Tables & Views & Functions`). Without all three —
-    // including per-table `Relationships` above — SupabaseClient<Database, "flowdo">
-    // can't resolve its Schema type parameter and silently falls back to `never` for
-    // every table's Row/Insert/Update, which breaks `.from(...)` calls (surfaced by
-    // Task 11's updateProfile, the first `.from()` use against the schema-typed client
-    // rather than a `Pick<SupabaseClient, "auth">` one).
     Views: Record<string, never>;
     Functions: Record<string, never>;
   };
