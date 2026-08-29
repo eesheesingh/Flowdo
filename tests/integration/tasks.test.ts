@@ -1,0 +1,139 @@
+import { describe, it, expect, afterEach } from "vitest";
+import { createAdminClient } from "../helpers/admin-client";
+import { createConfirmedTestUser } from "../helpers/test-user";
+import { createTask, updateTask, deleteTask, completeTask, reopenTask, listTasks } from "@/lib/tasks/tasks";
+
+const admin = createAdminClient();
+const createdUserIds: string[] = [];
+
+afterEach(async () => {
+  for (const id of createdUserIds.splice(0)) {
+    await admin.auth.admin.deleteUser(id);
+  }
+});
+
+describe("createTask", () => {
+  it("creates a task owned by the caller with sensible defaults", async () => {
+    const owner = await createConfirmedTestUser(admin, "tasks-create@example.com", "Password123!");
+    createdUserIds.push(owner.userId);
+
+    const { data, error } = await createTask(owner.client, owner.userId, { title: "Buy milk" });
+    expect(error).toBeNull();
+    expect(data?.status).toBe("TODO");
+    expect(data?.priority).toBe("MEDIUM");
+    expect(data?.user_id).toBe(owner.userId);
+  });
+
+  it("a different user cannot see or modify the task (RLS through the application layer)", async () => {
+    const owner = await createConfirmedTestUser(admin, "tasks-owner@example.com", "Password123!");
+    const attacker = await createConfirmedTestUser(admin, "tasks-attacker@example.com", "Password123!");
+    createdUserIds.push(owner.userId, attacker.userId);
+
+    const { data: task } = await createTask(owner.client, owner.userId, { title: "Private task" });
+
+    const { data: attackerView } = await listTasks(attacker.client, {});
+    expect(attackerView?.find((t) => t.id === task!.id)).toBeUndefined();
+
+    const { data: updated } = await updateTask(attacker.client, task!.id, { title: "hijacked" });
+    expect(updated).toBeNull();
+  });
+});
+
+describe("updateTask / deleteTask", () => {
+  it("updates fields and can be deleted by the owner", async () => {
+    const owner = await createConfirmedTestUser(admin, "tasks-update@example.com", "Password123!");
+    createdUserIds.push(owner.userId);
+
+    const { data: task } = await createTask(owner.client, owner.userId, { title: "Draft" });
+    const { data: updated, error } = await updateTask(owner.client, task!.id, { title: "Final", priority: "HIGH" });
+    expect(error).toBeNull();
+    expect(updated?.title).toBe("Final");
+    expect(updated?.priority).toBe("HIGH");
+
+    const { error: deleteError } = await deleteTask(owner.client, task!.id);
+    expect(deleteError).toBeNull();
+
+    const { data: afterDelete } = await listTasks(owner.client, {});
+    expect(afterDelete?.find((t) => t.id === task!.id)).toBeUndefined();
+  });
+});
+
+describe("completeTask / reopenTask", () => {
+  it("sets and clears completed_at and status", async () => {
+    const owner = await createConfirmedTestUser(admin, "tasks-complete@example.com", "Password123!");
+    createdUserIds.push(owner.userId);
+
+    const { data: task } = await createTask(owner.client, owner.userId, { title: "Finish report" });
+    const { error: completeError } = await completeTask(owner.client, task!.id);
+    expect(completeError).toBeNull();
+
+    const { data: afterComplete } = await listTasks(owner.client, { status: "COMPLETED" });
+    const completed = afterComplete?.find((t) => t.id === task!.id);
+    expect(completed?.status).toBe("COMPLETED");
+    expect(completed?.completed_at).not.toBeNull();
+
+    const { error: reopenError } = await reopenTask(owner.client, task!.id);
+    expect(reopenError).toBeNull();
+
+    const { data: afterReopen } = await listTasks(owner.client, { status: "TODO" });
+    const reopened = afterReopen?.find((t) => t.id === task!.id);
+    expect(reopened?.status).toBe("TODO");
+    expect(reopened?.completed_at).toBeNull();
+  });
+});
+
+describe("listTasks filters", () => {
+  it("filters by projectId null (Inbox) vs a specific project", async () => {
+    const owner = await createConfirmedTestUser(admin, "tasks-inbox@example.com", "Password123!");
+    createdUserIds.push(owner.userId);
+
+    const { data: project } = await owner.client
+      .from("projects")
+      .insert({ owner_id: owner.userId, name: "Website", color: "#4F46E5" })
+      .select()
+      .single();
+
+    await createTask(owner.client, owner.userId, { title: "No project" });
+    await createTask(owner.client, owner.userId, { title: "In project", projectId: project!.id });
+
+    const { data: inboxTasks } = await listTasks(owner.client, { projectId: null });
+    expect(inboxTasks?.map((t) => t.title)).toEqual(["No project"]);
+
+    const { data: projectTasks } = await listTasks(owner.client, { projectId: project!.id });
+    expect(projectTasks?.map((t) => t.title)).toEqual(["In project"]);
+  });
+
+  it("filters by dueDate today/upcoming and excludes completed", async () => {
+    const owner = await createConfirmedTestUser(admin, "tasks-duedate@example.com", "Password123!");
+    createdUserIds.push(owner.userId);
+
+    const today = new Date().toISOString();
+    const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: todayTask } = await createTask(owner.client, owner.userId, { title: "Due today", dueDate: today });
+    await createTask(owner.client, owner.userId, { title: "Due next week", dueDate: nextWeek });
+    await completeTask(owner.client, todayTask!.id);
+    const { data: anotherToday } = await createTask(owner.client, owner.userId, { title: "Also today", dueDate: today });
+
+    const { data: todayResults } = await listTasks(owner.client, { dueDate: "today", excludeCompleted: true });
+    expect(todayResults?.map((t) => t.id)).toEqual([anotherToday!.id]);
+
+    const { data: upcomingResults } = await listTasks(owner.client, { dueDate: "upcoming" });
+    expect(upcomingResults?.map((t) => t.title)).toEqual(["Due next week"]);
+  });
+
+  it("searches by title/description and sorts alphabetically", async () => {
+    const owner = await createConfirmedTestUser(admin, "tasks-search@example.com", "Password123!");
+    createdUserIds.push(owner.userId);
+
+    await createTask(owner.client, owner.userId, { title: "Zebra task" });
+    await createTask(owner.client, owner.userId, { title: "Apple task", description: "buy fruit" });
+    await createTask(owner.client, owner.userId, { title: "Unrelated" });
+
+    const { data: searchResults } = await listTasks(owner.client, { search: "fruit" });
+    expect(searchResults?.map((t) => t.title)).toEqual(["Apple task"]);
+
+    const { data: sorted } = await listTasks(owner.client, { sort: "alphabetical" });
+    expect(sorted?.map((t) => t.title)).toEqual(["Apple task", "Unrelated", "Zebra task"]);
+  });
+});
