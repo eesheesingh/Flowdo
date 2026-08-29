@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { signupSchema, loginSchema, otpSchema, resetPasswordSchema, profileSchema } from "./auth";
+import { signupSchema, loginSchema, resetPasswordSchema, profileSchema } from "./auth";
 
 describe("signupSchema", () => {
   it("accepts a valid signup", () => {
@@ -33,14 +33,6 @@ describe("signupSchema", () => {
 describe("loginSchema", () => {
   it("requires both email and password", () => {
     expect(loginSchema.safeParse({ email: "a@example.com", password: "" }).success).toBe(false);
-  });
-});
-
-describe("otpSchema", () => {
-  it("requires exactly 6 digits", () => {
-    expect(otpSchema.safeParse({ code: "123456" }).success).toBe(true);
-    expect(otpSchema.safeParse({ code: "12345" }).success).toBe(false);
-    expect(otpSchema.safeParse({ code: "12345a" }).success).toBe(false);
   });
 });
 

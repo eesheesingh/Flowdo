@@ -247,13 +247,20 @@ otp_expiry = 3600
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
 
-# Branded FlowDo template showing the 6-digit OTP ({{ .Token }}) instead of
-# only a magic link — required by the /verify page's OTP-entry UI. Without
-# this, Supabase's default template sends only a "Confirm email address"
-# link and never displays a code for the user to type.
+# Branded FlowDo template linking to our own /auth/confirm route handler
+# (with token_hash + type=signup) instead of Supabase's default
+# ConfirmationURL. /auth/confirm exchanges the token for a session via
+# verifyOtp and redirects into the app — no code for the user to type.
 [auth.email.template.confirmation]
 subject = "Verify your email — FlowDo"
 content_path = "./supabase/templates/confirmation.html"
+
+# Branded FlowDo template for password recovery, also linking to
+# /auth/confirm (with type=recovery) so the token gets exchanged for a
+# session before the user lands on /reset-password.
+[auth.email.template.recovery]
+subject = "Reset your password — FlowDo"
+content_path = "./supabase/templates/recovery.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

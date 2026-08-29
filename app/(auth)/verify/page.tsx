@@ -13,7 +13,8 @@ export default function VerifyPage({
       <div className="space-y-1 text-center">
         <h1 className="text-xl font-semibold">Check your email</h1>
         <p className="text-sm text-muted-foreground">
-          We sent a 6-digit code to <span className="font-medium text-foreground">{email}</span>
+          We sent a confirmation link to <span className="font-medium text-foreground">{email}</span>. Click it to
+          activate your account.
         </p>
       </div>
       <VerifyForm email={email} />

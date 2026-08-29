@@ -13,11 +13,6 @@ export const loginSchema = z.object({
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
-export const otpSchema = z.object({
-  code: z.string().regex(/^\d{6}$/, "Enter the 6-digit code"),
-});
-export type OtpInput = z.infer<typeof otpSchema>;
-
 export const forgotPasswordSchema = z.object({
   email: z.string().trim().email("Enter a valid email address"),
 });

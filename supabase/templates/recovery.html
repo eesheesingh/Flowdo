@@ -12,19 +12,19 @@
             </tr>
             <tr>
               <td style="font-size:20px; font-weight:600; color:#18181b; padding-bottom:12px;">
-                Confirm your email
+                Reset your password
               </td>
             </tr>
             <tr>
               <td style="font-size:14px; color:#52525b; padding-bottom:24px;">
-                Click the button below to confirm your email address and activate your FlowDo account.
+                Click the button below to choose a new password for your FlowDo account.
               </td>
             </tr>
             <tr>
               <td style="padding-bottom:24px;">
-                <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup&next=/app/dashboard"
+                <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password"
                    style="display:inline-block; font-size:15px; font-weight:600; color:#ffffff; background-color:#4F46E5; border-radius:8px; padding:12px 28px; text-decoration:none;">
-                  Confirm email
+                  Reset password
                 </a>
               </td>
             </tr>
@@ -35,7 +35,7 @@
             </tr>
             <tr>
               <td style="font-size:13px; color:#71717a; padding-bottom:24px;">
-                If you didn't create a FlowDo account, you can safely ignore this email.
+                If you didn't request a password reset, you can safely ignore this email.
               </td>
             </tr>
             <tr>
