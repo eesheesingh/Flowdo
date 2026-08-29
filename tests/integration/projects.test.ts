@@ -44,6 +44,9 @@ describe("createProject / updateProject", () => {
 
     const { data: attackerView } = await listProjects(attacker.client);
     expect(attackerView?.find((p) => p.id === project!.id)).toBeUndefined();
+
+    const { data: updated } = await updateProject(attacker.client, project!.id, { name: "hijacked" });
+    expect(updated).toBeNull();
   });
 });
 
