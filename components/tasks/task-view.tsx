@@ -17,7 +17,7 @@ import {
   listTasks,
   type ListTasksFilters,
 } from "@/lib/tasks/tasks";
-import { parseFilterParams, type UserFilterParams } from "@/lib/tasks/filter-params";
+import { parseFilterParams, buildFullFilters, type UserFilterParams } from "@/lib/tasks/filter-params";
 import type { TaskInput } from "@/lib/validations/tasks";
 import type { Database } from "@/types/database";
 
@@ -55,25 +55,30 @@ export function TaskView({
   const [openTask, setOpenTask] = React.useState<TaskRowData | null>(null);
   const [mutationError, setMutationError] = React.useState<string | null>(null);
 
+  const rawParams = Object.fromEntries(searchParams.entries());
+  // Note: projectId is included here (unlike buildFullFilters below) purely so
+  // <TaskFilters> can show the currently-selected project and hasActiveFilter
+  // can detect a project-only filter. It's never merged into fullFilters, so
+  // it can't reintroduce the "undefined projectId clobbers base null" bug.
   const userFilters: UserFilterParams & { projectId?: string } = {
-    ...parseFilterParams(Object.fromEntries(searchParams.entries())),
+    ...parseFilterParams(rawParams),
     projectId: searchParams.get("project") ?? undefined,
   };
   const hasActiveFilter = Boolean(
     userFilters.status || userFilters.priority || userFilters.search || userFilters.projectId
   );
 
-  const fullFilters: ListTasksFilters = { ...baseFilters, ...userFilters };
+  const fullFilters: ListTasksFilters = buildFullFilters(baseFilters, rawParams);
   const queryKey = ["tasks", viewKey, fullFilters];
 
   const { data: tasks } = useQuery({
     queryKey,
     queryFn: async () => {
       const { data, error } = await listTasks(supabase, fullFilters);
-      if (error) setMutationError(error);
+      setMutationError(error);
       return data ?? [];
     },
-    initialData: JSON.stringify(fullFilters) === JSON.stringify(baseFilters) ? initialTasks : undefined,
+    initialData: initialTasks,
   });
 
   function invalidate() {

@@ -35,3 +35,16 @@ export function parseFilterParams(params: Record<string, string | string[] | und
 function firstValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
+
+export function buildFullFilters<T extends Record<string, unknown>>(
+  baseFilters: T,
+  rawParams: Record<string, string | string[] | undefined>
+): T & UserFilterParams & { projectId?: string } {
+  const userFilters = parseFilterParams(rawParams);
+  const projectParam = rawParams.project;
+  return {
+    ...baseFilters,
+    ...userFilters,
+    ...(typeof projectParam === "string" ? { projectId: projectParam } : {}),
+  };
+}

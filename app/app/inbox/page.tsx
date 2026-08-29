@@ -1,17 +1,23 @@
 import { createClient } from "@/lib/supabase/server";
 import { listTasks } from "@/lib/tasks/tasks";
 import { listProjects } from "@/lib/projects/projects";
+import { buildFullFilters } from "@/lib/tasks/filter-params";
 import { TaskView } from "@/components/tasks/task-view";
 
-export default async function InboxPage() {
+export default async function InboxPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const baseFilters = { projectId: null, excludeCompleted: true } as const;
+  const fullFilters = buildFullFilters(baseFilters, searchParams);
   const [{ data: tasks }, { data: projects }] = await Promise.all([
-    listTasks(supabase, baseFilters),
+    listTasks(supabase, fullFilters),
     listProjects(supabase),
   ]);
 
