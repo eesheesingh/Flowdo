@@ -39,7 +39,7 @@ function firstValue(value: string | string[] | undefined): string | undefined {
 export function buildFullFilters<T extends Record<string, unknown>>(
   baseFilters: T,
   rawParams: Record<string, string | string[] | undefined>
-): T & UserFilterParams & { projectId?: string } {
+): T & UserFilterParams & { projectId?: string | null } {
   const userFilters = parseFilterParams(rawParams);
   const projectParam = rawParams.project;
   return {

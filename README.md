@@ -15,8 +15,42 @@ All application data lives in a dedicated `flowdo` Postgres schema (not
 `public`), with Row Level Security enabled on every table, enforced purely
 via `auth.uid()`. Phase 1 covers project setup, the full database schema,
 RLS, Supabase-native email/OTP authentication, protected routes, and a
-dashboard shell. See `docs/superpowers/specs/` for the full design and
-`docs/superpowers/plans/` for the implementation plan.
+dashboard shell. Phase 2 builds task and project management on top of that
+foundation: Inbox/Today/Upcoming/Completed views, project CRUD and
+archiving, search/filter/sort, and drag-and-drop ordering. See
+`docs/superpowers/specs/` for the full design and `docs/superpowers/plans/`
+for the implementation plan.
+
+## Task & project management
+
+Tasks and projects follow the same data-layer convention Phase 1 established
+for auth: plain async functions in `lib/tasks/*.ts` and `lib/projects/*.ts`
+(e.g. `createTask`, `updateTask`, `completeTask`, `reopenTask`, `listTasks`,
+`createProject`, `archiveProject`) that take a Supabase client and do a
+single typed operation — no Next.js Server Actions. Server Components call
+them with the server client (`lib/supabase/server`); Client Components call
+the same functions with the browser client (`lib/supabase/client`) from
+inside TanStack Query mutations/queries in `components/tasks/task-view.tsx`.
+All authorization is still enforced by RLS via `auth.uid()`, never by
+trusting a `user_id`/`project_id` passed from the client.
+
+Search, filter, and sort state lives entirely in the URL's query string
+rather than component state. `lib/tasks/filter-params.ts`'s
+`buildFullFilters` merges a view's fixed base filters (e.g. Inbox's
+`projectId: null`, Today's `dueDate: "today"`) with the user-controlled
+params parsed out of the query string (`status`, `priority`, `q`, `sort`,
+`project`). Both Server Components (the `/app/inbox`, `/app/today`,
+`/app/upcoming`, `/app/completed`, and project detail pages, reading
+`searchParams`) and the Client Component `TaskView` (reading
+`useSearchParams()`) call the same `buildFullFilters` function, so the
+initial server-rendered list and the client-refetched list always agree,
+and filters survive a page refresh or a shared link.
+
+Drag-and-drop reordering does not rewrite every row's `position` on each
+move. `lib/tasks/reorder.ts`'s `calculateNewPosition` computes a single new
+position as the midpoint between the two tasks the dragged row now sits
+between (or `±10` from an end when there's no neighbor on one side), so a
+reorder is always exactly one row update.
 
 ## Local setup
 
@@ -67,7 +101,13 @@ never be referenced from Client Components or committed to source control.
 
 ## Roadmap
 
-Phase 2 (tasks, projects, search/filtering), Phase 3 (subtasks, labels,
-calendar, recurring tasks, notifications), Phase 4 (analytics, realtime,
-project members), Phase 5 (AI features) each get their own spec and plan
-once the prior phase is stable.
+Phase 3 (subtasks, labels, calendar, recurring tasks, notifications),
+Phase 4 (analytics, realtime, project members), Phase 5 (AI features) each
+get their own spec and plan once the prior phase is stable.
+
+## Phase 2 status
+
+Phase 2 (tasks, projects, search/filtering/sorting, drag-and-drop ordering)
+is complete: full verification (`npm run lint`, `npm run typecheck`,
+`npm test`, `npm run test:integration`, `npm run build`) passes. See
+"Task & project management" above for the architecture.
