@@ -27,7 +27,7 @@ export async function createProject(supabase: Client, ownerId: string, input: Pr
 }
 
 export async function updateProject(supabase: Client, projectId: string, input: Partial<ProjectInputLike>) {
-  const patch: Record<string, unknown> = {};
+  const patch: Database["flowdo"]["Tables"]["projects"]["Update"] = {};
   if (input.name !== undefined) patch.name = input.name;
   if (input.description !== undefined) patch.description = input.description;
   if (input.color !== undefined) patch.color = input.color;

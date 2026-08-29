@@ -38,7 +38,7 @@ export async function updateTask(
   taskId: string,
   input: Partial<TaskInputLike> & { status?: TaskStatus }
 ) {
-  const patch: Record<string, unknown> = {};
+  const patch: Database["flowdo"]["Tables"]["tasks"]["Update"] = {};
   if (input.title !== undefined) patch.title = input.title;
   if (input.description !== undefined) patch.description = input.description;
   if (input.dueDate !== undefined) patch.due_date = input.dueDate;
