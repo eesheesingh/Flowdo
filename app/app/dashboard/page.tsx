@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { listTasks } from "@/lib/tasks/tasks";
 import { listProjects } from "@/lib/projects/projects";
 import { computeDashboardStats } from "@/lib/tasks/dashboard-stats";
-import { getTodayRange } from "@/lib/tasks/date-ranges";
+import { getTodayRange, isWithinRange } from "@/lib/tasks/date-ranges";
 import { DashboardTodayList } from "./dashboard-today-list";
 import { ProjectCard } from "@/components/projects/project-card";
 
@@ -20,7 +20,7 @@ export default async function DashboardPage() {
   const stats = computeDashboardStats(allTasks ?? []);
   const { start, end } = getTodayRange();
   const todayTasks = (allTasks ?? []).filter(
-    (t) => t.due_date !== null && t.due_date >= start && t.due_date < end
+    (t) => t.due_date !== null && isWithinRange(t.due_date, start, end)
   );
 
   const firstName = user?.user_metadata?.full_name?.split(" ")[0] ?? "there";

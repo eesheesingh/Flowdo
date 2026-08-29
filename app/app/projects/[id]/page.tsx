@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProject, listProjects } from "@/lib/projects/projects";
 import { listTasks } from "@/lib/tasks/tasks";
 import { buildFullFilters } from "@/lib/tasks/filter-params";
-import { getTodayRange } from "@/lib/tasks/date-ranges";
+import { getTodayRange, isBefore } from "@/lib/tasks/date-ranges";
 import { ProjectStatsHeader } from "@/components/projects/project-stats-header";
 import { TaskView } from "@/components/tasks/task-view";
 import { ArchiveProjectButton } from "./archive-project-button";
@@ -36,7 +36,7 @@ export default async function ProjectDetailPage({
   const { start } = getTodayRange();
   const overdue =
     allTasksInProject?.filter(
-      (t) => t.status !== "COMPLETED" && t.due_date && t.due_date < start
+      (t) => t.status !== "COMPLETED" && t.due_date && isBefore(t.due_date, start)
     ).length ?? 0;
 
   return (
