@@ -3,7 +3,7 @@ import { listTasks } from "@/lib/tasks/tasks";
 import { listProjects } from "@/lib/projects/projects";
 import { computeDashboardStats } from "@/lib/tasks/dashboard-stats";
 import { getTodayRange } from "@/lib/tasks/date-ranges";
-import { TaskList } from "@/components/tasks/task-list";
+import { DashboardTodayList } from "./dashboard-today-list";
 import { ProjectCard } from "@/components/projects/project-card";
 
 export default async function DashboardPage() {
@@ -42,13 +42,7 @@ export default async function DashboardPage() {
 
       <div className="space-y-3">
         <h2 className="text-sm font-medium text-muted-foreground">Today</h2>
-        <TaskList
-          tasks={todayTasks}
-          onOpenTask={() => {}}
-          onToggleComplete={() => {}}
-          emptyTitle="Nothing due today"
-          emptyDescription="Enjoy the calm."
-        />
+        <DashboardTodayList tasks={todayTasks} />
       </div>
 
       {(projects ?? []).length > 0 && (
