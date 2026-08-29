@@ -1,11 +1,35 @@
-import { CheckCircle2 } from "lucide-react";
-import { EmptyState } from "@/components/dashboard/empty-state";
+import { createClient } from "@/lib/supabase/server";
+import { listTasks } from "@/lib/tasks/tasks";
+import { listProjects } from "@/lib/projects/projects";
+import { TaskView } from "@/components/tasks/task-view";
 
-export default function CompletedPage() {
+export default async function CompletedPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const baseFilters = { status: "COMPLETED" } as const;
+  const [{ data: tasks }, { data: projects }] = await Promise.all([
+    listTasks(supabase, baseFilters),
+    listProjects(supabase),
+  ]);
+
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Completed</h1>
-      <EmptyState icon={CheckCircle2} title="No completed tasks yet" description="Tasks you finish will show up here." />
+      <TaskView
+        initialTasks={tasks ?? []}
+        projects={projects ?? []}
+        userId={user!.id}
+        baseFilters={baseFilters}
+        viewKey="completed"
+        emptyState={{
+          default: { title: "No completed tasks yet", description: "Tasks you finish will show up here." },
+          filtered: { title: "No completed tasks match your filters", description: "Try clearing a filter or search term." },
+        }}
+        showProjectFilter
+      />
     </div>
   );
 }

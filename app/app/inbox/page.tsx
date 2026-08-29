@@ -1,11 +1,35 @@
-import { Inbox } from "lucide-react";
-import { EmptyState } from "@/components/dashboard/empty-state";
+import { createClient } from "@/lib/supabase/server";
+import { listTasks } from "@/lib/tasks/tasks";
+import { listProjects } from "@/lib/projects/projects";
+import { TaskView } from "@/components/tasks/task-view";
 
-export default function InboxPage() {
+export default async function InboxPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const baseFilters = { projectId: null, excludeCompleted: true } as const;
+  const [{ data: tasks }, { data: projects }] = await Promise.all([
+    listTasks(supabase, baseFilters),
+    listProjects(supabase),
+  ]);
+
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Inbox</h1>
-      <EmptyState icon={Inbox} title="Inbox is empty" description="Unassigned tasks will land here." />
+      <TaskView
+        initialTasks={tasks ?? []}
+        projects={projects ?? []}
+        userId={user!.id}
+        baseFilters={baseFilters}
+        viewKey="inbox"
+        emptyState={{
+          default: { title: "Inbox is empty", description: "Unassigned tasks will land here." },
+          filtered: { title: "No tasks match your filters", description: "Try clearing a filter or search term." },
+        }}
+        enableReorder
+      />
     </div>
   );
 }
