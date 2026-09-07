@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormError } from "@/components/ui/form-error";
+import { SubtaskSection } from "./subtask-section";
 import type { Database } from "@/types/database";
 
 type TaskRowData = Database["flowdo"]["Tables"]["tasks"]["Row"];
@@ -17,6 +18,7 @@ type ProjectRowData = Database["flowdo"]["Tables"]["projects"]["Row"];
 export function TaskDetailPanel({
   task,
   projects,
+  userId,
   open,
   onOpenChange,
   onSave,
@@ -24,6 +26,7 @@ export function TaskDetailPanel({
 }: {
   task: TaskRowData;
   projects: ProjectRowData[];
+  userId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (taskId: string, input: TaskInput) => Promise<void>;
@@ -130,6 +133,8 @@ export function TaskDetailPanel({
                 ))}
               </select>
             </div>
+
+            <SubtaskSection taskId={task.id} userId={userId} />
 
             <div className="mt-auto flex items-center justify-between pt-4">
               <Button type="button" variant="ghost" onClick={() => onDelete(task.id)} className="text-destructive">

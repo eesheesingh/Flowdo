@@ -168,6 +168,7 @@ export function TaskView({
         <TaskDetailPanel
           task={openTask}
           projects={projects}
+          userId={userId}
           open={!!openTask}
           onOpenChange={(open) => !open && setOpenTask(null)}
           onSave={async (taskId, input) => {

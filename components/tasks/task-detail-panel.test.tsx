@@ -3,6 +3,10 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TaskDetailPanel } from "./task-detail-panel";
 
+// The subtask section owns its own data layer (Supabase client + TanStack Query)
+// and has its own test. Stub it so these form-focused tests stay isolated.
+vi.mock("./subtask-section", () => ({ SubtaskSection: () => null }));
+
 const baseTask = {
   id: "1",
   user_id: "u1",
@@ -27,6 +31,8 @@ describe("TaskDetailPanel", () => {
       <TaskDetailPanel
         task={baseTask}
         projects={[]}
+        userId="u1"
+
         open={true}
         onOpenChange={vi.fn()}
         onSave={onSave}
@@ -54,6 +60,8 @@ describe("TaskDetailPanel", () => {
       <TaskDetailPanel
         task={baseTask}
         projects={[]}
+        userId="u1"
+
         open={true}
         onOpenChange={vi.fn()}
         onSave={vi.fn()}
@@ -85,6 +93,8 @@ describe("TaskDetailPanel", () => {
       <TaskDetailPanel
         task={taskWithProject}
         projects={projects}
+        userId="u1"
+
         open={true}
         onOpenChange={vi.fn()}
         onSave={onSave}
@@ -106,6 +116,8 @@ describe("TaskDetailPanel", () => {
       <TaskDetailPanel
         task={taskWithDueDate}
         projects={[]}
+        userId="u1"
+
         open={true}
         onOpenChange={vi.fn()}
         onSave={onSave}
@@ -126,6 +138,8 @@ describe("TaskDetailPanel", () => {
       <TaskDetailPanel
         task={taskWithDueDate}
         projects={[]}
+        userId="u1"
+
         open={true}
         onOpenChange={vi.fn()}
         onSave={vi.fn()}
