@@ -4,7 +4,9 @@ const STATUSES = ["TODO", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const;
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
 const SORTS = ["due_date", "priority", "created_at", "alphabetical", "manual", "completed_at"] as const;
 
-export type UserFilterParams = Pick<ListTasksFilters, "status" | "priority" | "search" | "sort">;
+export type UserFilterParams = Pick<ListTasksFilters, "status" | "priority" | "search" | "sort" | "labelId">;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function parseFilterParams(params: Record<string, string | string[] | undefined>): UserFilterParams {
   const result: UserFilterParams = {};
@@ -27,6 +29,11 @@ export function parseFilterParams(params: Record<string, string | string[] | und
   const sort = firstValue(params.sort);
   if (sort && (SORTS as readonly string[]).includes(sort)) {
     result.sort = sort as UserFilterParams["sort"];
+  }
+
+  const label = firstValue(params.label);
+  if (label && UUID_RE.test(label)) {
+    result.labelId = label;
   }
 
   return result;

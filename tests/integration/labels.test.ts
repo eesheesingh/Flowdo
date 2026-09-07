@@ -65,4 +65,18 @@ describe("labels", () => {
     const { error } = await setTaskLabels(attacker.client, attackerTask!.id, [label!.id]);
     expect(error).toMatch(/couldn't update task labels/i); // task_labels_insert_own blocks it
   });
+
+  it("listTasks filters to only tasks carrying the label", async () => {
+    const { listTasks } = await import("@/lib/tasks/tasks");
+    const owner = await createConfirmedTestUser(admin, "labels-filter@example.com", "Password123!");
+    createdUserIds.push(owner.userId);
+
+    const { data: tagged } = await createTask(owner.client, owner.userId, { title: "Tagged" });
+    await createTask(owner.client, owner.userId, { title: "Untagged" });
+    const { data: label } = await createLabel(owner.client, owner.userId, { name: "Focus", color: "#4F46E5" });
+    await setTaskLabels(owner.client, tagged!.id, [label!.id]);
+
+    const { data: filtered } = await listTasks(owner.client, { labelId: label!.id });
+    expect(filtered?.map((t) => t.title)).toEqual(["Tagged"]);
+  });
 });

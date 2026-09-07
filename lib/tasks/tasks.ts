@@ -88,11 +88,14 @@ export interface ListTasksFilters {
   priority?: TaskPriority;
   search?: string;
   sort?: "due_date" | "priority" | "created_at" | "alphabetical" | "manual" | "completed_at";
+  labelId?: string;
   limit?: number;
 }
 
 export async function listTasks(supabase: Client, filters: ListTasksFilters) {
-  let query = supabase.from("tasks").select("*");
+  let query = filters.labelId
+    ? supabase.from("tasks").select("*, task_labels!inner(label_id)").eq("task_labels.label_id", filters.labelId)
+    : supabase.from("tasks").select("*");
 
   if (filters.projectId !== undefined) {
     query = filters.projectId === null ? query.is("project_id", null) : query.eq("project_id", filters.projectId);

@@ -15,6 +15,15 @@ describe("parseFilterParams", () => {
   it("ignores unrecognized values instead of throwing", () => {
     expect(parseFilterParams({ status: "NOT_A_STATUS", sort: "nonsense" })).toEqual({});
   });
+
+  it("parses a label id from the `label` param", () => {
+    const parsed = parseFilterParams({ label: "b1e6d2a0-0000-4000-8000-000000000000" });
+    expect(parsed.labelId).toBe("b1e6d2a0-0000-4000-8000-000000000000");
+  });
+
+  it("ignores a non-uuid `label` param", () => {
+    expect(parseFilterParams({ label: "not-a-uuid" }).labelId).toBeUndefined();
+  });
 });
 
 describe("buildFullFilters", () => {
