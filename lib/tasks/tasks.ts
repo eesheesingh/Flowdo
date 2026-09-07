@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import { getTodayRange } from "./date-ranges";
+import { nextDueDate, type Recurrence, type RecurrenceRule } from "./recurrence";
 
 type TaskRow = Database["flowdo"]["Tables"]["tasks"]["Row"];
 type TaskStatus = TaskRow["status"];
@@ -13,6 +14,9 @@ export interface TaskInputLike {
   dueDate?: string | null;
   priority?: TaskPriority;
   projectId?: string | null;
+  parentTaskId?: string | null;
+  recurrence?: Recurrence;
+  recurrenceRule?: RecurrenceRule | null;
 }
 
 export async function createTask(supabase: Client, userId: string, input: TaskInputLike) {
@@ -25,6 +29,9 @@ export async function createTask(supabase: Client, userId: string, input: TaskIn
       due_date: input.dueDate ?? null,
       priority: input.priority ?? "MEDIUM",
       project_id: input.projectId ?? null,
+      parent_task_id: input.parentTaskId ?? null,
+      recurrence: input.recurrence ?? "NEVER",
+      recurrence_rule: input.recurrenceRule ?? null,
       position: Date.now(),
     })
     .select()
@@ -45,6 +52,8 @@ export async function updateTask(
   if (input.dueDate !== undefined) patch.due_date = input.dueDate;
   if (input.priority !== undefined) patch.priority = input.priority;
   if (input.projectId !== undefined) patch.project_id = input.projectId;
+  if (input.recurrence !== undefined) patch.recurrence = input.recurrence;
+  if (input.recurrenceRule !== undefined) patch.recurrence_rule = input.recurrenceRule;
   if (input.status !== undefined) patch.status = input.status;
 
   const { data, error } = await supabase.from("tasks").update(patch).eq("id", taskId).select().single();
@@ -59,11 +68,31 @@ export async function deleteTask(supabase: Client, taskId: string) {
 }
 
 export async function completeTask(supabase: Client, taskId: string) {
-  const { error } = await supabase
+  const { data: task, error } = await supabase
     .from("tasks")
     .update({ status: "COMPLETED", completed_at: new Date().toISOString() })
-    .eq("id", taskId);
-  if (error) return { error: "Couldn't complete task. Please try again." };
+    .eq("id", taskId)
+    .select()
+    .single();
+  if (error || !task) return { error: "Couldn't complete task. Please try again." };
+
+  if (task.recurrence !== "NEVER" && task.due_date) {
+    const next = nextDueDate(new Date(task.due_date), task.recurrence, task.recurrence_rule);
+    const { error: cloneError } = await supabase.from("tasks").insert({
+      user_id: task.user_id,
+      project_id: task.project_id,
+      parent_task_id: task.parent_task_id,
+      title: task.title,
+      description: task.description,
+      priority: task.priority,
+      due_date: next.toISOString(),
+      recurrence: task.recurrence,
+      recurrence_rule: task.recurrence_rule,
+      position: Date.now(),
+    });
+    // The task IS completed; a failed clone is surfaced but not rolled back.
+    if (cloneError) return { error: "Task completed, but the next occurrence couldn't be created." };
+  }
   return { error: null };
 }
 

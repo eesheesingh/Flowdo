@@ -24,6 +24,23 @@ describe("taskSchema", () => {
   it("rejects an invalid priority", () => {
     expect(taskSchema.safeParse({ title: "x", priority: "SUPER_URGENT" }).success).toBe(false);
   });
+
+  it("taskSchema accepts a recurrence with no rule for presets", () => {
+    const r = taskSchema.parse({ title: "x", recurrence: "WEEKLY", dueDate: "2026-09-01" });
+    expect(r.recurrence).toBe("WEEKLY");
+  });
+
+  it("taskSchema requires a rule when recurrence is CUSTOM", () => {
+    expect(taskSchema.safeParse({ title: "x", recurrence: "CUSTOM", dueDate: "2026-09-01" }).success).toBe(false);
+    expect(
+      taskSchema.safeParse({
+        title: "x",
+        recurrence: "CUSTOM",
+        dueDate: "2026-09-01",
+        recurrenceRule: { interval: 2, unit: "week" },
+      }).success
+    ).toBe(true);
+  });
 });
 
 describe("projectSchema", () => {
