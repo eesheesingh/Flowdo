@@ -29,8 +29,8 @@ export type Database = {
           position: number;
           created_at: string;
           updated_at: string;
-          recurrence?: "NEVER" | "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY" | "CUSTOM";
-          recurrence_rule?: { interval: number; unit: "day" | "week" | "month" | "year" } | null;
+          recurrence: "NEVER" | "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY" | "CUSTOM";
+          recurrence_rule: { interval: number; unit: "day" | "week" | "month" | "year" } | null;
         };
         Insert: Partial<Database["flowdo"]["Tables"]["tasks"]["Row"]> & { user_id: string; title: string };
         Update: Partial<Database["flowdo"]["Tables"]["tasks"]["Row"]>;

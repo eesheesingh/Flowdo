@@ -64,6 +64,8 @@ const baseTask = {
   position: 0,
   created_at: "2026-01-01T00:00:00.000Z",
   updated_at: "2026-01-01T00:00:00.000Z",
+  recurrence: "NEVER" as const,
+  recurrence_rule: null,
 };
 
 // The panel now runs a useQuery for assigned labels, so every render needs a
