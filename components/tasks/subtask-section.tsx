@@ -97,7 +97,10 @@ export function SubtaskSection({ taskId, userId }: { taskId: string; userId: str
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && title.trim()) add.mutate(title.trim());
+          if (e.key === "Enter" && title.trim()) {
+            e.preventDefault(); // input sits inside the detail-panel <form>; don't fire its submit
+            add.mutate(title.trim());
+          }
         }}
         placeholder="Add a subtask, press Enter…"
         className="w-full rounded-md border border-dashed border-border px-3 py-1.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"

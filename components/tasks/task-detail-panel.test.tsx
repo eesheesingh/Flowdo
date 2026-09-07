@@ -1,11 +1,33 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TaskDetailPanel } from "./task-detail-panel";
 
-// The subtask section owns its own data layer (Supabase client + TanStack Query)
-// and has its own test. Stub it so these form-focused tests stay isolated.
-vi.mock("./subtask-section", () => ({ SubtaskSection: () => null }));
+// Most tests here are form-focused and stub the subtask section to nothing.
+// The "Enter in the subtask field" regression test flips `mockRealSubtask.on`
+// to render the REAL <SubtaskSection>; its data layer is mocked below so no
+// real Supabase client is built.
+const mockRealSubtask = { on: false };
+vi.mock("./subtask-section", async (orig) => {
+  const actual = await orig<typeof import("./subtask-section")>();
+  return {
+    SubtaskSection: (props: { taskId: string; userId: string }) =>
+      mockRealSubtask.on ? <actual.SubtaskSection {...props} /> : null,
+  };
+});
+vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({}) }));
+const createSubtask = vi.fn().mockResolvedValue({ data: { id: "s1", title: "x", status: "TODO" }, error: null });
+vi.mock("@/lib/tasks/subtasks", async (orig) => ({
+  ...(await orig<typeof import("@/lib/tasks/subtasks")>()),
+  listSubtasks: vi.fn().mockResolvedValue({ data: [], error: null }),
+  createSubtask: (...a: unknown[]) => createSubtask(...a),
+}));
+vi.mock("@/lib/tasks/tasks", () => ({
+  completeTask: vi.fn().mockResolvedValue({ error: null }),
+  reopenTask: vi.fn().mockResolvedValue({ error: null }),
+  deleteTask: vi.fn().mockResolvedValue({ error: null }),
+}));
 
 const baseTask = {
   id: "1",
@@ -148,5 +170,34 @@ describe("TaskDetailPanel", () => {
     );
 
     expect(screen.getByLabelText(/due date/i)).toHaveValue("2026-02-01");
+  });
+
+  it("pressing Enter to add a subtask does not submit the panel form (regression: missing preventDefault)", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    mockRealSubtask.on = true;
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    try {
+      render(
+        <QueryClientProvider client={qc}>
+          <TaskDetailPanel
+            task={baseTask}
+            projects={[]}
+            userId="u1"
+            open={true}
+            onOpenChange={vi.fn()}
+            onSave={onSave}
+            onDelete={vi.fn()}
+          />
+        </QueryClientProvider>
+      );
+
+      await user.type(screen.getByPlaceholderText(/add a subtask/i), "New subtask{Enter}");
+
+      expect(createSubtask).toHaveBeenCalledWith(expect.anything(), "u1", "1", "New subtask");
+      expect(onSave).not.toHaveBeenCalled();
+    } finally {
+      mockRealSubtask.on = false;
+    }
   });
 });
