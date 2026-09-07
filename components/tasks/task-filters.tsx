@@ -6,19 +6,24 @@ import type { UserFilterParams } from "@/lib/tasks/filter-params";
 import type { Database } from "@/types/database";
 
 type ProjectRowData = Database["flowdo"]["Tables"]["projects"]["Row"];
+type LabelRowData = Database["flowdo"]["Tables"]["labels"]["Row"];
 
 export function TaskFilters({
   currentFilters,
   onChange,
   projects,
+  labels = [],
   showProjectFilter = false,
+  showLabelFilter = true,
   hideStatusFilter = false,
   hideManualSort = false,
 }: {
   currentFilters: UserFilterParams & { projectId?: string };
   onChange: (filters: UserFilterParams & { projectId?: string }) => void;
   projects: ProjectRowData[];
+  labels?: LabelRowData[];
   showProjectFilter?: boolean;
+  showLabelFilter?: boolean;
   hideStatusFilter?: boolean;
   hideManualSort?: boolean;
 }) {
@@ -79,6 +84,22 @@ export function TaskFilters({
         <option value="HIGH">High</option>
         <option value="URGENT">Urgent</option>
       </select>
+
+      {showLabelFilter && (
+        <select
+          aria-label="Label"
+          value={currentFilters.labelId ?? ""}
+          onChange={(e) => onChange({ ...currentFilters, labelId: e.target.value || undefined })}
+          className="h-10 rounded-md border border-border bg-background px-2 text-sm"
+        >
+          <option value="">Any label</option>
+          {labels.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name}
+            </option>
+          ))}
+        </select>
+      )}
 
       {showProjectFilter && (
         <select

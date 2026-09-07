@@ -24,6 +24,8 @@ import type { Database } from "@/types/database";
 
 type TaskRowData = Database["flowdo"]["Tables"]["tasks"]["Row"];
 type ProjectRowData = Database["flowdo"]["Tables"]["projects"]["Row"];
+type LabelRowData = Database["flowdo"]["Tables"]["labels"]["Row"];
+type LabelChip = { id: string; name: string; color: string };
 
 export interface EmptyStateCopy {
   title: string;
@@ -33,6 +35,7 @@ export interface EmptyStateCopy {
 export function TaskView({
   initialTasks,
   projects,
+  labels,
   userId,
   baseFilters,
   viewKey,
@@ -44,6 +47,7 @@ export function TaskView({
 }: {
   initialTasks: TaskRowData[];
   projects: ProjectRowData[];
+  labels: LabelRowData[];
   userId: string;
   baseFilters: Omit<ListTasksFilters, "priority" | "search">;
   viewKey: string;
@@ -68,9 +72,14 @@ export function TaskView({
   const userFilters: UserFilterParams & { projectId?: string } = {
     ...parseFilterParams(rawParams),
     projectId: searchParams.get("project") ?? undefined,
+    labelId: searchParams.get("label") ?? undefined,
   };
   const hasActiveFilter = Boolean(
-    userFilters.status || userFilters.priority || userFilters.search || userFilters.projectId
+    userFilters.status ||
+      userFilters.priority ||
+      userFilters.search ||
+      userFilters.projectId ||
+      userFilters.labelId
   );
 
   const fullFilters: ListTasksFilters = buildFullFilters(baseFilters, rawParams);
@@ -84,6 +93,27 @@ export function TaskView({
       return data ?? [];
     },
     initialData: initialTasks,
+  });
+
+  const taskIds = (tasks ?? []).map((t) => t.id);
+  const { data: labelsByTask } = useQuery({
+    queryKey: ["task-labels-map", viewKey, taskIds],
+    queryFn: async () => {
+      const map = new Map<string, LabelChip[]>();
+      if (taskIds.length === 0) return map;
+      const { data, error } = await supabase
+        .from("task_labels")
+        .select("task_id, labels(id, name, color)")
+        .in("task_id", taskIds);
+      if (error || !data) return map;
+      for (const row of data as unknown as { task_id: string; labels: LabelChip | null }[]) {
+        if (!row.labels) continue;
+        const chips = map.get(row.task_id) ?? [];
+        chips.push(row.labels);
+        map.set(row.task_id, chips);
+      }
+      return map;
+    },
   });
 
   function invalidate() {
@@ -130,6 +160,7 @@ export function TaskView({
     if (next.search) params.set("q", next.search);
     if (next.sort) params.set("sort", next.sort);
     if (next.projectId) params.set("project", next.projectId);
+    if (next.labelId) params.set("label", next.labelId);
     router.replace(`?${params.toString()}`, { scroll: false });
   }
 
@@ -151,6 +182,7 @@ export function TaskView({
         currentFilters={userFilters}
         onChange={updateUrlFilters}
         projects={projects}
+        labels={labels}
         showProjectFilter={showProjectFilter}
         hideStatusFilter={hideStatusFilter}
         hideManualSort={hideManualSort}
@@ -164,6 +196,7 @@ export function TaskView({
         }
         emptyTitle={activeEmptyState.title}
         emptyDescription={activeEmptyState.description}
+        labelsByTask={labelsByTask}
       />
       {openTask && (
         <TaskDetailPanel

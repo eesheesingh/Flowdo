@@ -23,15 +23,18 @@ import { calculateNewPosition } from "@/lib/tasks/reorder";
 import type { Database } from "@/types/database";
 
 type TaskRowData = Database["flowdo"]["Tables"]["tasks"]["Row"];
+type LabelChip = { id: string; name: string; color: string };
 
 function SortableTaskRow({
   task,
   onOpen,
   onToggleComplete,
+  labels,
 }: {
   task: TaskRowData;
   onOpen: (task: TaskRowData) => void;
   onToggleComplete: (task: TaskRowData) => void;
+  labels?: LabelChip[];
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -48,7 +51,7 @@ function SortableTaskRow({
         <GripVertical className="h-4 w-4" />
       </button>
       <div className="flex-1">
-        <TaskRow task={task} onOpen={onOpen} onToggleComplete={onToggleComplete} />
+        <TaskRow task={task} onOpen={onOpen} onToggleComplete={onToggleComplete} labels={labels} />
       </div>
     </div>
   );
@@ -61,6 +64,7 @@ export function TaskList({
   onReorder,
   emptyTitle,
   emptyDescription,
+  labelsByTask,
 }: {
   tasks: TaskRowData[];
   onOpenTask: (task: TaskRowData) => void;
@@ -68,6 +72,7 @@ export function TaskList({
   onReorder?: (taskId: string, newPosition: number) => void;
   emptyTitle: string;
   emptyDescription: string;
+  labelsByTask?: Map<string, LabelChip[]>;
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -82,7 +87,13 @@ export function TaskList({
     return (
       <div className="space-y-2">
         {tasks.map((task) => (
-          <TaskRow key={task.id} task={task} onOpen={onOpenTask} onToggleComplete={onToggleComplete} />
+          <TaskRow
+            key={task.id}
+            task={task}
+            onOpen={onOpenTask}
+            onToggleComplete={onToggleComplete}
+            labels={labelsByTask?.get(task.id)}
+          />
         ))}
       </div>
     );
@@ -108,7 +119,13 @@ export function TaskList({
       <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
         <div className="space-y-2">
           {tasks.map((task) => (
-            <SortableTaskRow key={task.id} task={task} onOpen={onOpenTask} onToggleComplete={onToggleComplete} />
+            <SortableTaskRow
+              key={task.id}
+              task={task}
+              onOpen={onOpenTask}
+              onToggleComplete={onToggleComplete}
+              labels={labelsByTask?.get(task.id)}
+            />
           ))}
         </div>
       </SortableContext>

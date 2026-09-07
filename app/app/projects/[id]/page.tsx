@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProject, listProjects } from "@/lib/projects/projects";
+import { listLabels } from "@/lib/labels/labels";
 import { listTasks } from "@/lib/tasks/tasks";
 import { buildFullFilters } from "@/lib/tasks/filter-params";
 import { getTodayRange, isBefore } from "@/lib/tasks/date-ranges";
@@ -25,10 +26,11 @@ export default async function ProjectDetailPage({
 
   const baseFilters = { projectId: project.id, parentTaskId: null, excludeCompleted: true } as const;
   const fullFilters = buildFullFilters(baseFilters, searchParams);
-  const [{ data: tasks }, { data: allTasksInProject }, { data: projects }] = await Promise.all([
+  const [{ data: tasks }, { data: allTasksInProject }, { data: projects }, { data: labels }] = await Promise.all([
     listTasks(supabase, fullFilters),
-    listTasks(supabase, { projectId: project.id }),
+    listTasks(supabase, { projectId: project.id, parentTaskId: null }),
     listProjects(supabase),
+    listLabels(supabase),
   ]);
 
   const total = allTasksInProject?.length ?? 0;
@@ -51,6 +53,7 @@ export default async function ProjectDetailPage({
       <TaskView
         initialTasks={tasks ?? []}
         projects={projects ?? []}
+        labels={labels ?? []}
         userId={user!.id}
         baseFilters={baseFilters}
         viewKey={`project-${project.id}`}

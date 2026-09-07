@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { listTasks } from "@/lib/tasks/tasks";
 import { listProjects } from "@/lib/projects/projects";
+import { listLabels } from "@/lib/labels/labels";
 import { buildFullFilters } from "@/lib/tasks/filter-params";
 import { TaskView } from "@/components/tasks/task-view";
 
@@ -16,9 +17,10 @@ export default async function UpcomingPage({
 
   const baseFilters = { dueDate: "upcoming", parentTaskId: null, excludeCompleted: true } as const;
   const fullFilters = buildFullFilters(baseFilters, searchParams);
-  const [{ data: tasks }, { data: projects }] = await Promise.all([
+  const [{ data: tasks }, { data: projects }, { data: labels }] = await Promise.all([
     listTasks(supabase, fullFilters),
     listProjects(supabase),
+    listLabels(supabase),
   ]);
 
   return (
@@ -27,6 +29,7 @@ export default async function UpcomingPage({
       <TaskView
         initialTasks={tasks ?? []}
         projects={projects ?? []}
+        labels={labels ?? []}
         userId={user!.id}
         baseFilters={baseFilters}
         viewKey="upcoming"

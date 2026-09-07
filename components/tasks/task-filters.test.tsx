@@ -55,4 +55,19 @@ describe("TaskFilters", () => {
     await user.selectOptions(screen.getByLabelText(/priority/i), "HIGH");
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ priority: "HIGH" }));
   });
+
+  it("calls onChange with a labelId when a label is picked", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <TaskFilters
+        currentFilters={{}}
+        onChange={onChange}
+        projects={[]}
+        labels={[{ id: "l1", name: "Work", color: "#4F46E5" }] as never}
+      />
+    );
+    await user.selectOptions(screen.getByLabelText("Label"), "l1");
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ labelId: "l1" }));
+  });
 });

@@ -26,10 +26,12 @@ export function TaskRow({
   task,
   onOpen,
   onToggleComplete,
+  labels,
 }: {
   task: TaskRowData;
   onOpen: (task: TaskRowData) => void;
   onToggleComplete: (task: TaskRowData) => void;
+  labels?: { id: string; name: string; color: string }[];
 }) {
   const isCompleted = task.status === "COMPLETED";
 
@@ -57,6 +59,20 @@ export function TaskRow({
       >
         {task.title}
       </button>
+      {labels && labels.length > 0 && (
+        <span className="flex shrink-0 gap-1">
+          {labels.map((l) => (
+            <span
+              key={l.id}
+              className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs"
+              style={{ backgroundColor: `${l.color}20`, color: l.color }}
+            >
+              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: l.color }} aria-hidden="true" />
+              {l.name}
+            </span>
+          ))}
+        </span>
+      )}
       {task.priority !== "MEDIUM" && (
         <span
           className={cn(
