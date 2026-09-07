@@ -118,6 +118,7 @@ export function TaskView({
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["tasks", viewKey] });
+    queryClient.invalidateQueries({ queryKey: ["task-labels-map", viewKey] });
     router.refresh();
   }
 
