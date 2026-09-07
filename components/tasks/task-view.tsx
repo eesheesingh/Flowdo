@@ -17,6 +17,7 @@ import {
   listTasks,
   type ListTasksFilters,
 } from "@/lib/tasks/tasks";
+import { setTaskLabels } from "@/lib/tasks/task-labels";
 import { parseFilterParams, buildFullFilters, type UserFilterParams } from "@/lib/tasks/filter-params";
 import type { TaskInput } from "@/lib/validations/tasks";
 import type { Database } from "@/types/database";
@@ -173,6 +174,10 @@ export function TaskView({
           onOpenChange={(open) => !open && setOpenTask(null)}
           onSave={async (taskId, input) => {
             await saveMutation.mutateAsync({ taskId, input });
+          }}
+          onLabelsChange={async (taskId, ids) => {
+            const r = await setTaskLabels(supabase, taskId, ids);
+            reportError(r);
           }}
           onDelete={(taskId) => {
             deleteMutation.mutate(taskId);

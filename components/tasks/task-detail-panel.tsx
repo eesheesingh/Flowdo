@@ -3,13 +3,17 @@ import * as React from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { taskSchema, type TaskInput } from "@/lib/validations/tasks";
+import { createClient } from "@/lib/supabase/client";
+import { listTaskLabels } from "@/lib/tasks/task-labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormError } from "@/components/ui/form-error";
 import { SubtaskSection } from "./subtask-section";
+import { LabelPicker } from "./label-picker";
 import type { Database } from "@/types/database";
 
 type TaskRowData = Database["flowdo"]["Tables"]["tasks"]["Row"];
@@ -23,6 +27,7 @@ export function TaskDetailPanel({
   onOpenChange,
   onSave,
   onDelete,
+  onLabelsChange,
 }: {
   task: TaskRowData;
   projects: ProjectRowData[];
@@ -31,7 +36,16 @@ export function TaskDetailPanel({
   onOpenChange: (open: boolean) => void;
   onSave: (taskId: string, input: TaskInput) => Promise<void>;
   onDelete: (taskId: string) => void;
+  onLabelsChange?: (taskId: string, labelIds: string[]) => Promise<void>;
 }) {
+  const [labelIds, setLabelIds] = React.useState<string[]>([]);
+  const { data: assignedLabelIds } = useQuery({
+    queryKey: ["task-labels", task.id],
+    queryFn: async () => (await listTaskLabels(createClient(), task.id)).data ?? [],
+  });
+  React.useEffect(() => {
+    if (assignedLabelIds) setLabelIds(assignedLabelIds);
+  }, [assignedLabelIds]);
   const {
     register,
     handleSubmit,
@@ -49,6 +63,7 @@ export function TaskDetailPanel({
 
   async function onSubmit(values: TaskInput) {
     await onSave(task.id, values);
+    await onLabelsChange?.(task.id, labelIds);
     onOpenChange(false);
   }
 
@@ -135,6 +150,11 @@ export function TaskDetailPanel({
             </div>
 
             <SubtaskSection taskId={task.id} userId={userId} />
+
+            <div className="space-y-2">
+              <Label>Labels</Label>
+              <LabelPicker userId={userId} value={labelIds} onChange={setLabelIds} />
+            </div>
 
             <div className="mt-auto flex items-center justify-between pt-4">
               <Button type="button" variant="ghost" onClick={() => onDelete(task.id)} className="text-destructive">
