@@ -14,7 +14,7 @@ export default async function InboxPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const baseFilters = { projectId: null, excludeCompleted: true } as const;
+  const baseFilters = { projectId: null, parentTaskId: null, excludeCompleted: true } as const;
   const fullFilters = buildFullFilters(baseFilters, searchParams);
   const [{ data: tasks }, { data: projects }] = await Promise.all([
     listTasks(supabase, fullFilters),

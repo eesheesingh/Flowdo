@@ -14,7 +14,7 @@ export default async function CompletedPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const baseFilters = { status: "COMPLETED", sort: "completed_at" } as const;
+  const baseFilters = { status: "COMPLETED", parentTaskId: null, sort: "completed_at" } as const;
   const fullFilters = buildFullFilters(baseFilters, searchParams);
   const [{ data: tasks }, { data: projects }] = await Promise.all([
     listTasks(supabase, fullFilters),

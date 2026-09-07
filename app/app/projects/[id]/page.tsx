@@ -23,7 +23,7 @@ export default async function ProjectDetailPage({
   const { data: project } = await getProject(supabase, params.id);
   if (!project) notFound();
 
-  const baseFilters = { projectId: project.id, excludeCompleted: true } as const;
+  const baseFilters = { projectId: project.id, parentTaskId: null, excludeCompleted: true } as const;
   const fullFilters = buildFullFilters(baseFilters, searchParams);
   const [{ data: tasks }, { data: allTasksInProject }, { data: projects }] = await Promise.all([
     listTasks(supabase, fullFilters),

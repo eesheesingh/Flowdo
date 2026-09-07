@@ -14,7 +14,7 @@ export default async function UpcomingPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const baseFilters = { dueDate: "upcoming", excludeCompleted: true } as const;
+  const baseFilters = { dueDate: "upcoming", parentTaskId: null, excludeCompleted: true } as const;
   const fullFilters = buildFullFilters(baseFilters, searchParams);
   const [{ data: tasks }, { data: projects }] = await Promise.all([
     listTasks(supabase, fullFilters),

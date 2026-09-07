@@ -42,4 +42,15 @@ describe("computeDashboardStats", () => {
     ];
     expect(computeDashboardStats(tasks, now).overdueCount).toBe(1);
   });
+
+  it("excludes subtasks (parent_task_id set) from today and overdue counts", () => {
+    const tasks = [
+      task({ due_date: "2026-03-15T09:00:00.000Z", status: "TODO" }),
+      { ...(task({ due_date: "2026-03-15T09:00:00.000Z", status: "TODO" }) as object), parent_task_id: "p1" },
+      { ...(task({ due_date: "2026-03-10T09:00:00.000Z", status: "TODO" }) as object), parent_task_id: "p1" },
+    ] as never[];
+    const stats = computeDashboardStats(tasks, now);
+    expect(stats.todayTotal).toBe(1);
+    expect(stats.overdueCount).toBe(0);
+  });
 });

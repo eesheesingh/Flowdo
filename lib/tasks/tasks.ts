@@ -81,6 +81,7 @@ export async function updateTaskPosition(supabase: Client, taskId: string, posit
 
 export interface ListTasksFilters {
   projectId?: string | null;
+  parentTaskId?: string | null;
   dueDate?: "today" | "upcoming" | "none";
   excludeCompleted?: boolean;
   status?: TaskStatus;
@@ -95,6 +96,13 @@ export async function listTasks(supabase: Client, filters: ListTasksFilters) {
 
   if (filters.projectId !== undefined) {
     query = filters.projectId === null ? query.is("project_id", null) : query.eq("project_id", filters.projectId);
+  }
+
+  if (filters.parentTaskId !== undefined) {
+    query =
+      filters.parentTaskId === null
+        ? query.is("parent_task_id", null)
+        : query.eq("parent_task_id", filters.parentTaskId);
   }
 
   if (filters.dueDate === "today") {

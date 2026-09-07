@@ -4,12 +4,13 @@ import type { Database } from "@/types/database";
 type TaskRow = Database["flowdo"]["Tables"]["tasks"]["Row"];
 
 export function computeDashboardStats(tasks: TaskRow[], now: Date = new Date()) {
+  const topLevel = tasks.filter((t) => t.parent_task_id === null);
   const { start, end } = getTodayRange(now);
 
-  const todayTasks = tasks.filter((t) => t.due_date && isWithinRange(t.due_date, start, end));
+  const todayTasks = topLevel.filter((t) => t.due_date && isWithinRange(t.due_date, start, end));
   const todayCompleted = todayTasks.filter((t) => t.status === "COMPLETED").length;
 
-  const overdueCount = tasks.filter(
+  const overdueCount = topLevel.filter(
     (t) => t.status !== "COMPLETED" && t.due_date && isBefore(t.due_date, start)
   ).length;
 
