@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { taskSchema, projectSchema } from "./tasks";
+import { taskSchema, projectSchema, labelSchema } from "./tasks";
 
 describe("taskSchema", () => {
   it("requires only a title", () => {
@@ -33,5 +33,14 @@ describe("projectSchema", () => {
 
   it("rejects a missing name", () => {
     expect(projectSchema.safeParse({ color: "#4F46E5", icon: "folder" }).success).toBe(false);
+  });
+});
+
+describe("labelSchema", () => {
+  it("accepts a trimmed name and a colour", () => {
+    expect(labelSchema.parse({ name: "  Work ", color: "#4F46E5" })).toEqual({ name: "Work", color: "#4F46E5" });
+  });
+  it("rejects an empty name", () => {
+    expect(labelSchema.safeParse({ name: "  ", color: "#4F46E5" }).success).toBe(false);
   });
 });

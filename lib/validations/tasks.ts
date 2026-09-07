@@ -16,3 +16,9 @@ export const projectSchema = z.object({
   icon: z.string().min(1, "Pick an icon"),
 });
 export type ProjectInput = z.infer<typeof projectSchema>;
+
+export const labelSchema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+  color: z.string().min(1, "Pick a colour"),
+});
+export type LabelInput = z.infer<typeof labelSchema>;
