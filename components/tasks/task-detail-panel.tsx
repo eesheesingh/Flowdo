@@ -8,12 +8,14 @@ import { X } from "lucide-react";
 import { taskSchema, type TaskInput } from "@/lib/validations/tasks";
 import { createClient } from "@/lib/supabase/client";
 import { listTaskLabels } from "@/lib/tasks/task-labels";
+import type { Recurrence, RecurrenceRule } from "@/lib/tasks/recurrence";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormError } from "@/components/ui/form-error";
 import { SubtaskSection } from "./subtask-section";
 import { LabelPicker } from "./label-picker";
+import { RecurrenceField } from "./recurrence-field";
 import type { Database } from "@/types/database";
 
 type TaskRowData = Database["flowdo"]["Tables"]["tasks"]["Row"];
@@ -46,9 +48,14 @@ export function TaskDetailPanel({
   React.useEffect(() => {
     if (assignedLabelIds) setLabelIds(assignedLabelIds);
   }, [assignedLabelIds]);
+  const [recurrence, setRecurrence] = React.useState<{ recurrence: Recurrence; rule: RecurrenceRule | null }>({
+    recurrence: task.recurrence,
+    rule: task.recurrence_rule,
+  });
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<TaskInput>({
     resolver: zodResolver(taskSchema),
@@ -58,11 +65,14 @@ export function TaskDetailPanel({
       dueDate: task.due_date ? task.due_date.slice(0, 10) : undefined,
       priority: task.priority,
       projectId: task.project_id ?? undefined,
+      recurrence: task.recurrence,
+      recurrenceRule: task.recurrence_rule,
     },
   });
+  const dueDateValue = watch("dueDate");
 
   async function onSubmit(values: TaskInput) {
-    await onSave(task.id, values);
+    await onSave(task.id, { ...values, recurrence: recurrence.recurrence, recurrenceRule: recurrence.rule });
     await onLabelsChange?.(task.id, labelIds);
     onOpenChange(false);
   }
@@ -155,6 +165,8 @@ export function TaskDetailPanel({
               <Label>Labels</Label>
               <LabelPicker userId={userId} value={labelIds} onChange={setLabelIds} />
             </div>
+
+            <RecurrenceField value={recurrence} onChange={setRecurrence} hasDueDate={!!dueDateValue} />
 
             <div className="mt-auto flex items-center justify-between pt-4">
               <Button type="button" variant="ghost" onClick={() => onDelete(task.id)} className="text-destructive">

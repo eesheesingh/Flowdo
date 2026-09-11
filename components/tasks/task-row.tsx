@@ -1,3 +1,4 @@
+import { Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/types/database";
 
@@ -89,6 +90,9 @@ export function TaskRow({
         <span className="shrink-0 text-xs text-muted-foreground">
           {formatDueDate(task.due_date)}
         </span>
+      )}
+      {task.recurrence !== "NEVER" && (
+        <Repeat className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-label="Repeats" />
       )}
     </div>
   );
