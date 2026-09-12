@@ -120,6 +120,7 @@ export interface ListTasksFilters {
   sort?: "due_date" | "priority" | "created_at" | "alphabetical" | "manual" | "completed_at";
   labelId?: string;
   limit?: number;
+  hasDueDate?: boolean;
 }
 
 export async function listTasks(supabase: Client, filters: ListTasksFilters) {
@@ -150,6 +151,10 @@ export async function listTasks(supabase: Client, filters: ListTasksFilters) {
     query = query.gte("due_date", end);
   } else if (filters.dueDate === "none") {
     query = query.is("due_date", null);
+  }
+
+  if (filters.hasDueDate) {
+    query = query.not("due_date", "is", null);
   }
 
   if (filters.excludeCompleted) {
