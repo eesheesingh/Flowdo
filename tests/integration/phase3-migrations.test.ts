@@ -76,4 +76,18 @@ describe("phase 3 migrations", () => {
     );
     expect(fk.rows[0].def).toContain("ON DELETE SET NULL");
   });
+
+  it("0010: notifications.dedupe_key + insert policy", async () => {
+    const col = await queryLocalDb(
+      `select is_nullable from information_schema.columns
+       where table_schema='flowdo' and table_name='notifications' and column_name='dedupe_key'`
+    );
+    expect(col.rows[0]?.is_nullable).toBe("YES");
+
+    const policy = await queryLocalDb(
+      `select policyname from pg_policies
+       where schemaname='flowdo' and tablename='notifications' and policyname='notifications_insert_own'`
+    );
+    expect(policy.rows.length).toBe(1);
+  });
 });
