@@ -25,19 +25,41 @@ export function NotificationBell({
   const supabase = createClient();
   // Local optimistic dismissal set layered on top of the server-provided readKeys.
   const [dismissed, setDismissed] = React.useState<Set<string>>(new Set());
+  const [mutationError, setMutationError] = React.useState<string | null>(null);
   const allRead = React.useMemo(() => new Set([...readKeys, ...dismissed]), [readKeys, dismissed]);
   const items = React.useMemo(() => deriveNotifications(tasks, allRead, new Date()), [tasks, allRead]);
 
+  function rollback(keys: string[]) {
+    setDismissed((s) => {
+      const next = new Set(s);
+      keys.forEach((k) => next.delete(k));
+      return next;
+    });
+  }
+
   async function openItem(n: DerivedNotification) {
     setDismissed((s) => new Set(s).add(n.key));
-    await markRead(supabase, userId, [n]);
+    const { error } = await markRead(supabase, userId, [n]);
+    if (error) {
+      rollback([n.key]);
+      setMutationError(error);
+      return;
+    }
+    setMutationError(null);
     if (n.taskId) router.push("/app/upcoming");
     router.refresh();
   }
 
   async function clearAll() {
-    setDismissed((s) => new Set([...s, ...items.map((i) => i.key)]));
-    await markAllRead(supabase, userId, items);
+    const keys = items.map((i) => i.key);
+    setDismissed((s) => new Set([...s, ...keys]));
+    const { error } = await markAllRead(supabase, userId, items);
+    if (error) {
+      rollback(keys);
+      setMutationError(error);
+      return;
+    }
+    setMutationError(null);
     router.refresh();
   }
 
@@ -69,6 +91,11 @@ export function NotificationBell({
               </button>
             )}
           </div>
+          {mutationError && (
+            <div role="alert" className="mx-2 mb-1 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              {mutationError}
+            </div>
+          )}
           {count === 0 ? (
             <p className="px-2 py-6 text-center text-sm text-muted-foreground">You&apos;re all caught up.</p>
           ) : (

@@ -34,14 +34,46 @@ describe("NotificationBell", () => {
     expect(await screen.findByLabelText(/2 unread notifications/i)).toBeInTheDocument(); // overdue + summary
   });
 
-  it("Mark all read clears the badge", async () => {
+  it("Mark all read clears the badge and calls markAllRead with the right args", async () => {
     const user = userEvent.setup();
     wrap(<NotificationBell userId="u" readKeys={[]} tasks={[
       task({ id: "a", title: "Old", due_date: "2020-01-01T00:00:00Z" }),
     ] as never} />);
     await user.click(screen.getByLabelText(/unread notifications/i));
     await user.click(await screen.findByRole("button", { name: /mark all read/i }));
-    expect(markAllRead).toHaveBeenCalled();
+    expect(markAllRead).toHaveBeenCalledTimes(1);
+    const [supabaseArg, userIdArg, itemsArg] = markAllRead.mock.calls[0]!;
+    expect(supabaseArg).toEqual({});
+    expect(userIdArg).toBe("u");
+    expect(itemsArg).toHaveLength(2);
+    expect(itemsArg[0]).toMatchObject({ key: "overdue:a", type: "overdue", taskId: "a" });
+    expect(itemsArg[1]).toMatchObject({ type: "daily-summary", taskId: null });
+  });
+
+  it("clicking a notification marks it read with the correct args", async () => {
+    const user = userEvent.setup();
+    wrap(<NotificationBell userId="u" readKeys={[]} tasks={[
+      task({ id: "a", title: "Old", due_date: "2020-01-01T00:00:00Z" }),
+    ] as never} />);
+    await user.click(screen.getByLabelText(/unread notifications/i));
+    await user.click(await screen.findByRole("button", { name: /Old/i }));
+    expect(markRead).toHaveBeenCalledTimes(1);
+    const [supabaseArg, userIdArg, itemsArg] = markRead.mock.calls[0]!;
+    expect(supabaseArg).toEqual({});
+    expect(userIdArg).toBe("u");
+    expect(itemsArg).toEqual([expect.objectContaining({ key: "overdue:a", taskId: "a" })]);
+  });
+
+  it("rolls back the optimistic dismissal and shows an error when markRead fails", async () => {
+    markRead.mockResolvedValueOnce({ error: "Couldn't update notifications. Please try again." });
+    const user = userEvent.setup();
+    wrap(<NotificationBell userId="u" readKeys={[]} tasks={[
+      task({ id: "a", title: "Old", due_date: "2020-01-01T00:00:00Z" }),
+    ] as never} />);
+    await user.click(screen.getByLabelText(/unread notifications/i));
+    await user.click(await screen.findByRole("button", { name: /Old/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/couldn't update notifications/i);
+    expect(screen.getByRole("button", { name: /Old/i })).toBeInTheDocument();
   });
 
   it("renders the empty state when nothing is due", async () => {
