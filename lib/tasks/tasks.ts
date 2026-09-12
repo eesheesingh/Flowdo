@@ -112,6 +112,7 @@ export interface ListTasksFilters {
   projectId?: string | null;
   parentTaskId?: string | null;
   dueDate?: "today" | "upcoming" | "none";
+  dueDateRange?: { start: string; end: string };
   excludeCompleted?: boolean;
   status?: TaskStatus;
   priority?: TaskPriority;
@@ -135,6 +136,10 @@ export async function listTasks(supabase: Client, filters: ListTasksFilters) {
       filters.parentTaskId === null
         ? query.is("parent_task_id", null)
         : query.eq("parent_task_id", filters.parentTaskId);
+  }
+
+  if (filters.dueDateRange) {
+    query = query.gte("due_date", filters.dueDateRange.start).lt("due_date", filters.dueDateRange.end);
   }
 
   if (filters.dueDate === "today") {
