@@ -27,4 +27,24 @@ describe("phase 3 migrations", () => {
     );
     expect(col.rows[0]).toMatchObject({ data_type: "jsonb", is_nullable: "YES" });
   });
+
+  it("0008: activity triggers exist on tasks and projects", async () => {
+    const rows = await queryLocalDb(
+      `select tgname, tgrelid::regclass::text as tbl from pg_trigger
+       where tgname in ('log_task_activity','log_project_activity')`
+    );
+    const map = Object.fromEntries(rows.rows.map((r) => [r.tgname, r.tbl]));
+    expect(map["log_task_activity"]).toBe("flowdo.tasks");
+    expect(map["log_project_activity"]).toBe("flowdo.projects");
+  });
+
+  it("0008: activity trigger functions exist in flowdo schema", async () => {
+    const rows = await queryLocalDb(
+      `select proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'flowdo' and proname in ('log_task_activity','log_project_activity')`
+    );
+    expect(rows.rows.map((r) => r.proname).sort()).toEqual(
+      ["log_project_activity", "log_task_activity"]
+    );
+  });
 });
