@@ -47,4 +47,33 @@ describe("phase 3 migrations", () => {
       ["log_project_activity", "log_task_activity"]
     );
   });
+
+  it("0009: deleting a user cascades through their own tasks/projects without error (regression)", async () => {
+    // Migration 0008's triggers insert an activity_logs row attributed to
+    // the acting user on every task/project delete. Deleting the user
+    // themselves cascades to delete their own tasks/projects in the same
+    // statement, so the trigger's insert used to hit a NOT NULL / ON DELETE
+    // CASCADE foreign key against the very auth.users row being removed.
+    const userId = "00000000-0000-4000-8000-000000000009";
+    await queryLocalDb(`delete from auth.users where id = $1`, [userId]);
+    await queryLocalDb(
+      `insert into auth.users (id, email) values ($1, 'phase3-migration-0009@example.com')`,
+      [userId]
+    );
+    const project = await queryLocalDb(
+      `insert into flowdo.projects (owner_id, name) values ($1, 'cascade check') returning id`,
+      [userId]
+    );
+    await queryLocalDb(
+      `insert into flowdo.tasks (user_id, project_id, title) values ($1, $2, 'cascade check task')`,
+      [userId, project.rows[0].id]
+    );
+
+    await expect(queryLocalDb(`delete from auth.users where id = $1`, [userId])).resolves.toBeDefined();
+
+    const fk = await queryLocalDb(
+      `select pg_get_constraintdef(oid) as def from pg_constraint where conname = 'activity_logs_user_id_fkey'`
+    );
+    expect(fk.rows[0].def).toContain("ON DELETE SET NULL");
+  });
 });
