@@ -16,6 +16,7 @@ import { FormError } from "@/components/ui/form-error";
 import { SubtaskSection } from "./subtask-section";
 import { LabelPicker } from "./label-picker";
 import { RecurrenceField } from "./recurrence-field";
+import { ActivityFeed } from "./activity-feed";
 import type { Database } from "@/types/database";
 
 type TaskRowData = Database["flowdo"]["Tables"]["tasks"]["Row"];
@@ -167,6 +168,8 @@ export function TaskDetailPanel({
             </div>
 
             <RecurrenceField value={recurrence} onChange={setRecurrence} hasDueDate={!!dueDateValue} />
+
+            <ActivityFeed taskId={task.id} />
 
             <div className="mt-auto flex items-center justify-between pt-4">
               <Button type="button" variant="ghost" onClick={() => onDelete(task.id)} className="text-destructive">

@@ -7,6 +7,7 @@ import { buildFullFilters } from "@/lib/tasks/filter-params";
 import { getTodayRange, isBefore } from "@/lib/tasks/date-ranges";
 import { ProjectStatsHeader } from "@/components/projects/project-stats-header";
 import { TaskView } from "@/components/tasks/task-view";
+import { ActivityFeed } from "@/components/tasks/activity-feed";
 import { ArchiveProjectButton } from "./archive-project-button";
 
 export default async function ProjectDetailPage({
@@ -63,6 +64,10 @@ export default async function ProjectDetailPage({
         }}
         enableReorder
       />
+      <div className="space-y-3">
+        <h2 className="text-sm font-medium text-muted-foreground">Activity</h2>
+        <ActivityFeed projectId={project.id} />
+      </div>
     </div>
   );
 }
