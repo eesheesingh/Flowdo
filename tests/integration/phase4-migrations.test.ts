@@ -9,6 +9,10 @@ const PROFILE_OWNER_ID = "00000000-0000-4000-8000-000000000201";
 const PROFILE_MEMBER_ID = "00000000-0000-4000-8000-000000000202";
 const PROFILE_STRANGER_ID = "00000000-0000-4000-8000-000000000203";
 const LOOKUP_ID = "00000000-0000-4000-8000-000000000210";
+const CASE_LOOKUP_ID = "00000000-0000-4000-8000-000000000211";
+const AL_OWNER_ID = "00000000-0000-4000-8000-000000000301";
+const AL_MEMBER_ID = "00000000-0000-4000-8000-000000000302";
+const AL_ACTOR_ID = "00000000-0000-4000-8000-000000000303";
 
 async function asUser(userId: string, sql: string) {
   const results = (await queryLocalDb(
@@ -21,9 +25,10 @@ async function asUser(userId: string, sql: string) {
 
 describe("phase 4 migrations", () => {
   afterAll(async () => {
-    await queryLocalDb(`delete from auth.users where id in ($1,$2,$3,$4,$5,$6,$7,$8)`, [
+    await queryLocalDb(`delete from auth.users where id in ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`, [
       OWNER_ID, ADMIN_ID, MEMBER_ID, OUTSIDER_ID,
       PROFILE_OWNER_ID, PROFILE_MEMBER_ID, PROFILE_STRANGER_ID, LOOKUP_ID,
+      CASE_LOOKUP_ID, AL_OWNER_ID, AL_MEMBER_ID, AL_ACTOR_ID,
     ]);
   });
 
@@ -208,5 +213,116 @@ describe("phase 4 migrations", () => {
        where pubname = 'supabase_realtime' and schemaname = 'flowdo'`
     );
     expect(rows.rows.map((r) => r.tablename).sort()).toEqual(["activity_logs", "tasks"]);
+  });
+
+  it("0014: the project owner can select and delete a task a real MEMBER created in their own project", async () => {
+    await queryLocalDb(`delete from auth.users where id in ($1,$2)`, [OWNER_ID, MEMBER_ID]);
+    await queryLocalDb(
+      `insert into auth.users (id, email) values
+       ($1, 'phase4-owner-owns@example.com'), ($2, 'phase4-member-creates@example.com')`,
+      [OWNER_ID, MEMBER_ID]
+    );
+    const project = await queryLocalDb(
+      `insert into flowdo.projects (owner_id, name) values ($1, 'owner-visibility-test') returning id`,
+      [OWNER_ID]
+    );
+    const projectId = project.rows[0]!.id;
+    await queryLocalDb(`insert into flowdo.project_members (project_id, user_id, role) values ($1, $2, 'MEMBER')`, [
+      projectId,
+      MEMBER_ID,
+    ]);
+
+    // MEMBER_ID creates the task via a real RLS-governed insert (not a
+    // superuser insert) so this exercises the actual member-authored-task
+    // scenario the review flagged -- the owner has no project_members row
+    // of their own (recursion-guard invariant) yet must still see/delete a
+    // task someone else created in their project.
+    const memberInsert = await asUser(
+      MEMBER_ID,
+      `insert into flowdo.tasks (user_id, project_id, title) values ('${MEMBER_ID}', '${projectId}', 'member-created task') returning id;`
+    );
+    const taskId = memberInsert.rows[0]!.id as string;
+
+    const ownerSelect = await asUser(OWNER_ID, `select id from flowdo.tasks where id = '${taskId}';`);
+    expect(ownerSelect.rows).toEqual([{ id: taskId }]);
+
+    const ownerDelete = await asUser(OWNER_ID, `delete from flowdo.tasks where id = '${taskId}' returning id;`);
+    expect(ownerDelete.rows).toEqual([{ id: taskId }]);
+  });
+
+  it("0014: a project MEMBER can select an activity_logs row for their project even though they didn't act on it", async () => {
+    await queryLocalDb(`delete from auth.users where id in ($1,$2,$3)`, [AL_OWNER_ID, AL_MEMBER_ID, AL_ACTOR_ID]);
+    await queryLocalDb(
+      `insert into auth.users (id, email) values
+       ($1, 'phase4-al-owner@example.com'), ($2, 'phase4-al-member@example.com'), ($3, 'phase4-al-actor@example.com')`,
+      [AL_OWNER_ID, AL_MEMBER_ID, AL_ACTOR_ID]
+    );
+    const project = await queryLocalDb(
+      `insert into flowdo.projects (owner_id, name) values ($1, 'activity-log-visibility-test') returning id`,
+      [AL_OWNER_ID]
+    );
+    const projectId = project.rows[0]!.id;
+    await queryLocalDb(`insert into flowdo.project_members (project_id, user_id, role) values ($1, $2, 'MEMBER')`, [
+      projectId,
+      AL_MEMBER_ID,
+    ]);
+    // The activity_logs row is attributed to a third user (AL_ACTOR_ID, not
+    // a project member and not the reader) so this only passes via the new
+    // project-member branch, not the pre-existing user_id/task-owner/
+    // project-owner branches.
+    const log = await queryLocalDb(
+      `insert into flowdo.activity_logs (user_id, project_id, action) values ($1, $2, 'project.updated') returning id`,
+      [AL_ACTOR_ID, projectId]
+    );
+    const logId = log.rows[0]!.id;
+
+    const memberSelect = await asUser(AL_MEMBER_ID, `select id from flowdo.activity_logs where id = '${logId}';`);
+    expect(memberSelect.rows).toEqual([{ id: logId }]);
+  });
+
+  it("0014: a project MEMBER can select task_labels for a task they don't own but that belongs to their shared project", async () => {
+    await queryLocalDb(`delete from auth.users where id in ($1,$2)`, [AL_OWNER_ID, AL_MEMBER_ID]);
+    await queryLocalDb(
+      `insert into auth.users (id, email) values
+       ($1, 'phase4-tl-owner@example.com'), ($2, 'phase4-tl-member@example.com')`,
+      [AL_OWNER_ID, AL_MEMBER_ID]
+    );
+    const project = await queryLocalDb(
+      `insert into flowdo.projects (owner_id, name) values ($1, 'task-labels-visibility-test') returning id`,
+      [AL_OWNER_ID]
+    );
+    const projectId = project.rows[0]!.id;
+    await queryLocalDb(`insert into flowdo.project_members (project_id, user_id, role) values ($1, $2, 'MEMBER')`, [
+      projectId,
+      AL_MEMBER_ID,
+    ]);
+    const task = await queryLocalDb(
+      `insert into flowdo.tasks (user_id, project_id, title) values ($1, $2, 'owner task with label') returning id`,
+      [AL_OWNER_ID, projectId]
+    );
+    const taskId = task.rows[0]!.id;
+    const label = await queryLocalDb(
+      `insert into flowdo.labels (user_id, name) values ($1, 'shared-label') returning id`,
+      [AL_OWNER_ID]
+    );
+    const labelId = label.rows[0]!.id;
+    await queryLocalDb(`insert into flowdo.task_labels (task_id, label_id) values ($1, $2)`, [taskId, labelId]);
+
+    const memberSelect = await asUser(
+      AL_MEMBER_ID,
+      `select task_id from flowdo.task_labels where task_id = '${taskId}';`
+    );
+    expect(memberSelect.rows).toEqual([{ task_id: taskId }]);
+  });
+
+  it("0014: find_user_id_by_email is case-insensitive in both directions", async () => {
+    await queryLocalDb(`delete from auth.users where id = $1`, [CASE_LOOKUP_ID]);
+    await queryLocalDb(`insert into auth.users (id, email) values ($1, 'person@example.com')`, [CASE_LOOKUP_ID]);
+
+    const upperInput = await queryLocalDb(`select flowdo.find_user_id_by_email('Person@Example.com') as id`);
+    expect(upperInput.rows[0]!.id).toBe(CASE_LOOKUP_ID);
+
+    const lowerInput = await queryLocalDb(`select flowdo.find_user_id_by_email('person@example.com') as id`);
+    expect(lowerInput.rows[0]!.id).toBe(CASE_LOOKUP_ID);
   });
 });
