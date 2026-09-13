@@ -64,7 +64,7 @@ reorder is always exactly one row update.
 ### Connecting to your hosted Supabase project
 
 1. `npx supabase link --project-ref <your-project-ref>`
-2. `npx supabase db push` — applies migrations to the hosted project.
+2. `npx supabase db push` — applies migrations to the hosted project. **If this hangs indefinitely with no output**, it's stuck on an interactive password prompt that doesn't resolve non-interactively in some environments/CI. Use `npx supabase db push --db-url "$TEST_DB_URL" --yes` instead (or the equivalent direct Postgres connection string + `--yes` to skip confirmation), where `TEST_DB_URL` is the hosted project's direct Postgres connection string (see `.env.test.local`).
 3. **Manual step (cannot be done via CLI/migration):** in the Supabase dashboard, go to Project Settings → API → Data API Settings → Exposed schemas, and add `flowdo` to the list. Without this, PostgREST will not serve any `flowdo` table to the app.
 4. **Manual step:** under Authentication → URL Configuration, set Site URL to your production domain and add `https://<your-domain>/**` to Redirect URLs. `supabase/config.toml`'s `additional_redirect_urls` only governs the local CLI stack and is never pushed to a hosted project — without this step, password reset breaks in production the same way it silently broke locally before this was fixed (the reset link redirects to your site's root instead of `/reset-password`).
 5. Fill `.env.local` with the hosted project's URL, anon key, and service role key (Settings → API).
