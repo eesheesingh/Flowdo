@@ -34,12 +34,15 @@ export function MemberList({
     queryKey,
     queryFn: async () => (await listMembers(supabase, projectId)).data ?? [],
     initialData: initialMembers,
-    // ponytail: without this, the default staleTime:0 triggers an immediate
-    // background refetch on every mount, which can replace initialData mid-
-    // interaction (observed: a row a user is clicking gets removed by a
-    // refetch that resolves during the click). Mutations below still force
-    // a fresh fetch via invalidateQueries, which ignores staleTime.
-    staleTime: Infinity,
+    // ponytail: without this, mounting triggers an immediate background
+    // refetch (default refetchOnMount behavior), which can replace
+    // initialData mid-interaction (observed: a row a user is clicking gets
+    // removed by a refetch that resolves during the click). This only skips
+    // the refetch-on-mount -- staleTime is left at its default, so a
+    // refetch-on-window-focus still picks up a change another tab/admin
+    // made, and the mutations below still force a fresh fetch via
+    // invalidateQueries regardless.
+    refetchOnMount: false,
   });
   const isManager = canManage(currentUserRole);
 
