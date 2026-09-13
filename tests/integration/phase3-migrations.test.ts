@@ -77,6 +77,55 @@ describe("phase 3 migrations", () => {
     expect(fk.rows[0].def).toContain("ON DELETE SET NULL");
   });
 
+  it("0011: activity_logs row with actor's user_id nulled stays visible to the current owner of its project", async () => {
+    // Simulates a project member's activity surviving that member's account
+    // deletion: the row's own user_id is null (as 0009 leaves it), but the
+    // project it's about still exists and is still owned by A. Before 0011,
+    // activity_logs_select_own only checked `user_id = auth.uid()`, so a
+    // nulled row was unreadable by anyone, including A.
+    const ownerId = "00000000-0000-4000-8000-000000000011";
+    const strangerId = "00000000-0000-4000-8000-000000000012";
+    await queryLocalDb(`delete from auth.users where id in ($1, $2)`, [ownerId, strangerId]);
+    await queryLocalDb(
+      `insert into auth.users (id, email) values
+       ($1, 'phase3-migration-0011-owner@example.com'),
+       ($2, 'phase3-migration-0011-stranger@example.com')`,
+      [ownerId, strangerId]
+    );
+    const project = await queryLocalDb(
+      `insert into flowdo.projects (owner_id, name) values ($1, 'owner-recovers-visibility') returning id`,
+      [ownerId]
+    );
+    const projectId = project.rows[0].id;
+    const log = await queryLocalDb(
+      `insert into flowdo.activity_logs (user_id, task_id, project_id, action, metadata)
+       values (null, null, $1, 'project.updated', '{}') returning id`,
+      [projectId]
+    );
+    const logId = log.rows[0].id;
+
+    // The project's current owner can now select the row as `authenticated`
+    // with auth.uid() set to their id -- exercising RLS for real, not just
+    // asserting the policy exists. set_config + the select must share one
+    // implicit transaction with `set local role`, so this goes through as a
+    // single multi-statement query rather than separate queryLocalDb calls.
+    const asOwner = (await queryLocalDb(
+      `set local role authenticated;
+       select set_config('request.jwt.claim.sub', '${ownerId}', true);
+       select id from flowdo.activity_logs where id = '${logId}';`
+    )) as unknown as { rows: { id: string }[] }[];
+    expect(asOwner[asOwner.length - 1]!.rows).toEqual([{ id: logId }]);
+
+    // An unrelated user (not the project owner, not the nulled-out actor)
+    // still can't see it -- the fix isn't a blanket grant.
+    const asStranger = (await queryLocalDb(
+      `set local role authenticated;
+       select set_config('request.jwt.claim.sub', '${strangerId}', true);
+       select id from flowdo.activity_logs where id = '${logId}';`
+    )) as unknown as { rows: { id: string }[] }[];
+    expect(asStranger[asStranger.length - 1]!.rows).toEqual([]);
+  });
+
   it("0010: notifications.dedupe_key + insert policy", async () => {
     const col = await queryLocalDb(
       `select is_nullable from information_schema.columns
