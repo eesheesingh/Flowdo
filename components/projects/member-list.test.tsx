@@ -7,6 +7,7 @@ vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({}) }));
 vi.mock("@/lib/projects/members", () => ({
   listMembers: vi.fn().mockResolvedValue({ data: [], error: null }),
 }));
+vi.mock("./invite-member-dialog", () => ({ InviteMemberDialog: () => null }));
 
 function wrap(ui: React.ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -40,5 +41,20 @@ describe("MemberList", () => {
   it("shows an empty state with no members", () => {
     wrap(<MemberList projectId="p1" currentUserRole="OWNER" initialMembers={[]} />);
     expect(screen.getByText("No members yet.")).toBeInTheDocument();
+  });
+
+  it("shows the invite button for an OWNER", () => {
+    wrap(<MemberList projectId="p1" currentUserRole="OWNER" initialMembers={[]} />);
+    expect(screen.getByRole("button", { name: /invite member/i })).toBeInTheDocument();
+  });
+
+  it("shows the invite button for an ADMIN", () => {
+    wrap(<MemberList projectId="p1" currentUserRole="ADMIN" initialMembers={[]} />);
+    expect(screen.getByRole("button", { name: /invite member/i })).toBeInTheDocument();
+  });
+
+  it("hides the invite button for a plain MEMBER", () => {
+    wrap(<MemberList projectId="p1" currentUserRole="MEMBER" initialMembers={[]} />);
+    expect(screen.queryByRole("button", { name: /invite member/i })).not.toBeInTheDocument();
   });
 });
