@@ -101,19 +101,23 @@ never be referenced from Client Components or committed to source control.
 
 ## Roadmap
 
-Phase 3 (subtasks, labels, calendar, recurring tasks, notifications),
-Phase 4 (analytics, realtime, project members), Phase 5 (AI features) each
-get their own spec and plan once the prior phase is stable.
+Phase 5 (AI features) gets its own spec and plan once Phase 4 is stable in
+production.
 
-## Phase 2 status
+## Status
 
-Phase 2 (tasks, projects, search/filtering/sorting, drag-and-drop ordering)
-is complete: full verification (`npm run lint`, `npm run typecheck`,
-`npm test`, `npm run test:integration`, `npm run build`) passes. See
-"Task & project management" above for the architecture.
+Phases 1-4 are complete, each with its own plan under
+`docs/superpowers/plans/` and full verification (`npm run lint`,
+`npm run typecheck`, `npm test`, `npm run test:integration`,
+`npm run build`) passing at merge time.
+
+- **Phase 1** — project setup, database, RLS, Supabase-native auth, protected routes, dashboard shell.
+- **Phase 2** — tasks, projects, search/filtering/sorting, drag-and-drop ordering. See "Task & project management" above for the architecture.
+- **Phase 3** — subtasks, labels, calendar, recurring tasks, an automatic activity log (DB triggers), and derived in-app notifications.
+- **Phase 4** — analytics (hand-rolled charts, no library), project members with roles (OWNER/ADMIN/MEMBER/VIEWER, migrations `0012`/`0014`), and Realtime-backed live task/activity updates for shared projects (migration `0013`).
 
 Known flake: `tests/integration/profile.test.ts` occasionally fails when the
 full integration suite runs with its default concurrency (it passes
-reliably in isolation). This is pre-existing and out of scope for the
-Phase 2 fix wave; if you see exactly that one failure, re-run
+reliably in isolation). This is pre-existing and out of scope for later
+phases; if you see exactly that one failure, re-run
 `npm run test:integration` to confirm it clears.
