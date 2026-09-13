@@ -1379,7 +1379,7 @@ Other future features:
 
 * AI task breakdown
 * AI prioritization
-* Dailstem.
+* Daily digest.
 
 ---
 
