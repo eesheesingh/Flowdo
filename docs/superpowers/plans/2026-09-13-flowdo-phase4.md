@@ -1410,19 +1410,41 @@ create policy "tasks_select_own" on flowdo.tasks
     or (project_id is not null and flowdo.is_project_member(project_id))
   );
 
+-- The plain `user_id = auth.uid()` escape hatch (kept for personal,
+-- project-less tasks and for the true project owner -- projects.owner_id,
+-- who per the recursion-guard invariant above has no project_members row of
+-- their own) must NOT extend to an arbitrary other project: without gating
+-- it on project_id being null or actually owned by the caller, any
+-- authenticated caller -- including a VIEWER or a total non-member -- could
+-- plant a task in someone else's project just by self-assigning user_id,
+-- which would silently defeat the MEMBER/ADMIN/OWNER-only restriction below.
+-- (An earlier draft of this migration had exactly this bug -- caught only
+-- because 2 of this task's own tests failed when actually run, not by
+-- inspection. Confirmed live post-fix: an unrelated user can no longer
+-- insert or move a task into a project they don't belong to.)
 drop policy "tasks_insert_own" on flowdo.tasks;
 create policy "tasks_insert_own" on flowdo.tasks
   for insert with check (
-    user_id = auth.uid()
+    (
+      project_id is null
+      and user_id = auth.uid()
+    )
     or (
       project_id is not null
-      and exists (
-        select 1 from flowdo.project_members pm
-        where pm.project_id = tasks.project_id and pm.user_id = auth.uid() and pm.role <> 'VIEWER'
+      and (
+        exists (select 1 from flowdo.projects p where p.id = tasks.project_id and p.owner_id = auth.uid())
+        or exists (
+          select 1 from flowdo.project_members pm
+          where pm.project_id = tasks.project_id and pm.user_id = auth.uid() and pm.role <> 'VIEWER'
+        )
       )
     )
   );
 
+-- USING keeps the plain user_id = auth.uid() branch unconditional: it only
+-- decides which EXISTING rows are visible to update (a row you already own
+-- is yours to touch regardless of project), so there's no project-attachment
+-- exploit here the way there is in WITH CHECK below.
 drop policy "tasks_update_own" on flowdo.tasks;
 create policy "tasks_update_own" on flowdo.tasks
   for update using (
@@ -1435,12 +1457,18 @@ create policy "tasks_update_own" on flowdo.tasks
       )
     )
   ) with check (
-    user_id = auth.uid()
+    (
+      project_id is null
+      and user_id = auth.uid()
+    )
     or (
       project_id is not null
-      and exists (
-        select 1 from flowdo.project_members pm
-        where pm.project_id = tasks.project_id and pm.user_id = auth.uid() and pm.role <> 'VIEWER'
+      and (
+        exists (select 1 from flowdo.projects p where p.id = tasks.project_id and p.owner_id = auth.uid())
+        or exists (
+          select 1 from flowdo.project_members pm
+          where pm.project_id = tasks.project_id and pm.user_id = auth.uid() and pm.role <> 'VIEWER'
+        )
       )
     )
   );
