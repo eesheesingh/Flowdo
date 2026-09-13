@@ -1,8 +1,9 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { listActivity } from "@/lib/activity/activity";
 import { describeActivity } from "@/lib/activity/format";
+import { useRealtimeActivity } from "@/lib/realtime/use-realtime-activity";
 
 function relative(iso: string, now: Date = new Date()): string {
   const diff = now.getTime() - new Date(iso).getTime();
@@ -16,9 +17,15 @@ function relative(iso: string, now: Date = new Date()): string {
 
 export function ActivityFeed({ taskId, projectId }: { taskId?: string; projectId?: string }) {
   const supabase = createClient();
+  const queryClient = useQueryClient();
+  const queryKey = ["activity", taskId ? "task" : "project", taskId ?? projectId];
   const { data: rows = [] } = useQuery({
-    queryKey: ["activity", taskId ? "task" : "project", taskId ?? projectId],
+    queryKey,
     queryFn: async () => (await listActivity(supabase, { taskId, projectId })).data ?? [],
+  });
+
+  useRealtimeActivity(taskId ? null : projectId ?? null, () => {
+    queryClient.invalidateQueries({ queryKey });
   });
 
   return (
