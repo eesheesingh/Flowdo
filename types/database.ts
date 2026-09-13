@@ -52,6 +52,18 @@ export type Database = {
         Update: Partial<Database["flowdo"]["Tables"]["projects"]["Row"]>;
         Relationships: [];
       };
+      project_members: {
+        Row: {
+          id: string;
+          project_id: string;
+          user_id: string;
+          role: "OWNER" | "ADMIN" | "MEMBER" | "VIEWER";
+          created_at: string;
+        };
+        Insert: Partial<Database["flowdo"]["Tables"]["project_members"]["Row"]> & { project_id: string; user_id: string };
+        Update: Partial<Database["flowdo"]["Tables"]["project_members"]["Row"]>;
+        Relationships: [];
+      };
       labels: {
         Row: {
           id: string;
@@ -102,6 +114,11 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      find_user_id_by_email: {
+        Args: { _email: string };
+        Returns: string | null;
+      };
+    };
   };
 };
