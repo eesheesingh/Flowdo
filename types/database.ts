@@ -89,7 +89,7 @@ export type Database = {
       activity_logs: {
         Row: {
           id: string;
-          user_id: string;
+          user_id: string | null;
           task_id: string | null;
           project_id: string | null;
           action: string;
