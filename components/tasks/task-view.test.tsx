@@ -24,6 +24,11 @@ vi.mock("@/lib/tasks/tasks", () => ({
 }));
 vi.mock("@/lib/tasks/task-labels", () => ({ setTaskLabels: vi.fn() }));
 
+const useRealtimeTasks = vi.fn();
+vi.mock("@/lib/realtime/use-realtime-tasks", () => ({
+  useRealtimeTasks: (...a: unknown[]) => useRealtimeTasks(...a),
+}));
+
 const task = {
   id: "t1",
   user_id: "u1",
@@ -125,5 +130,49 @@ describe("TaskView ?task= deep link", () => {
 
     await waitFor(() => expect(getTask).toHaveBeenCalled());
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
+
+describe("TaskView realtime", () => {
+  it("subscribes to realtime task changes scoped to the view's projectId", () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <TaskView
+          initialTasks={[]}
+          projects={[]}
+          labels={[]}
+          userId="u1"
+          baseFilters={{ projectId: "p1" }}
+          viewKey="project-p1"
+          emptyState={{
+            default: { title: "d", description: "d" },
+            filtered: { title: "f", description: "f" },
+          }}
+        />
+      </QueryClientProvider>
+    );
+    expect(useRealtimeTasks).toHaveBeenCalledWith("p1", expect.any(Function));
+  });
+
+  it("passes null for a non-project-scoped view", () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <TaskView
+          initialTasks={[]}
+          projects={[]}
+          labels={[]}
+          userId="u1"
+          baseFilters={{}}
+          viewKey="inbox"
+          emptyState={{
+            default: { title: "d", description: "d" },
+            filtered: { title: "f", description: "f" },
+          }}
+        />
+      </QueryClientProvider>
+    );
+    expect(useRealtimeTasks).toHaveBeenCalledWith(null, expect.any(Function));
   });
 });

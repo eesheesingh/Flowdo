@@ -7,6 +7,7 @@ import { TaskFilters } from "./task-filters";
 import { TaskList } from "./task-list";
 import { TaskDetailPanel } from "./task-detail-panel";
 import { createClient } from "@/lib/supabase/client";
+import { useRealtimeTasks } from "@/lib/realtime/use-realtime-tasks";
 import {
   createTask,
   updateTask,
@@ -85,6 +86,10 @@ export function TaskView({
 
   const fullFilters: ListTasksFilters = buildFullFilters(baseFilters, rawParams);
   const queryKey = ["tasks", viewKey, fullFilters];
+
+  useRealtimeTasks(typeof fullFilters.projectId === "string" ? fullFilters.projectId : null, () => {
+    queryClient.invalidateQueries({ queryKey: ["tasks", viewKey] });
+  });
 
   const { data: tasks } = useQuery({
     queryKey,
