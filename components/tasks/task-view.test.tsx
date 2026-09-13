@@ -4,11 +4,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TaskView } from "./task-view";
 
 const completeTask = vi.fn();
+const getTask = vi.fn();
+const searchParamsMock = vi.fn(() => new URLSearchParams());
 
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({}) }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => searchParamsMock(),
 }));
 vi.mock("@/lib/tasks/tasks", () => ({
   listTasks: vi.fn().mockResolvedValue({ data: [], error: null }),
@@ -18,6 +20,7 @@ vi.mock("@/lib/tasks/tasks", () => ({
   completeTask: (...a: unknown[]) => completeTask(...a),
   reopenTask: vi.fn(),
   updateTaskPosition: vi.fn(),
+  getTask: (...a: unknown[]) => getTask(...a),
 }));
 vi.mock("@/lib/tasks/task-labels", () => ({ setTaskLabels: vi.fn() }));
 
@@ -42,6 +45,8 @@ const task = {
 beforeEach(() => {
   vi.clearAllMocks();
   completeTask.mockResolvedValue({ error: null });
+  getTask.mockResolvedValue({ data: null, error: null });
+  searchParamsMock.mockReturnValue(new URLSearchParams());
 });
 
 describe("TaskView invalidate()", () => {
@@ -72,5 +77,53 @@ describe("TaskView invalidate()", () => {
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["tasks", "inbox"] });
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["task-labels-map", "inbox"] });
     });
+  });
+});
+
+describe("TaskView ?task= deep link", () => {
+  function renderView(initialTasks: typeof task[]) {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    return render(
+      <QueryClientProvider client={qc}>
+        <TaskView
+          initialTasks={initialTasks}
+          projects={[]}
+          labels={[]}
+          userId="u1"
+          baseFilters={{}}
+          viewKey="upcoming"
+          emptyState={{
+            default: { title: "d", description: "d" },
+            filtered: { title: "f", description: "f" },
+          }}
+        />
+      </QueryClientProvider>
+    );
+  }
+
+  it("opens the task named by ?task= when it's already in the fetched list", async () => {
+    searchParamsMock.mockReturnValue(new URLSearchParams("task=t1"));
+    renderView([task]);
+
+    expect(await screen.findByDisplayValue(task.title)).toBeInTheDocument();
+    expect(getTask).not.toHaveBeenCalled();
+  });
+
+  it("falls back to fetching the task directly when it's not in the current view", async () => {
+    searchParamsMock.mockReturnValue(new URLSearchParams("task=elsewhere"));
+    getTask.mockResolvedValue({ data: { ...task, id: "elsewhere", title: "From elsewhere" }, error: null });
+    renderView([task]);
+
+    expect(await screen.findByDisplayValue("From elsewhere")).toBeInTheDocument();
+    expect(getTask).toHaveBeenCalledWith({}, "elsewhere");
+  });
+
+  it("silently ignores a ?task= id that doesn't exist or isn't the caller's", async () => {
+    searchParamsMock.mockReturnValue(new URLSearchParams("task=missing"));
+    getTask.mockResolvedValue({ data: null, error: "Task not found." });
+    renderView([task]);
+
+    await waitFor(() => expect(getTask).toHaveBeenCalled());
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

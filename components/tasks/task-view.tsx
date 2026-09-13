@@ -15,6 +15,7 @@ import {
   reopenTask,
   updateTaskPosition,
   listTasks,
+  getTask,
   type ListTasksFilters,
 } from "@/lib/tasks/tasks";
 import { setTaskLabels } from "@/lib/tasks/task-labels";
@@ -115,6 +116,27 @@ export function TaskView({
       return map;
     },
   });
+
+  // Opens the task named by ?task=<id> (e.g. from a notification click) once
+  // on mount: reuse it from the already-fetched list when possible, only
+  // hitting the DB directly if it's not in this view (filtered out, etc).
+  // A ref guards against re-running every time `tasks` refetches.
+  const deepLinkedTaskId = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    const taskId = searchParams.get("task");
+    if (!taskId || deepLinkedTaskId.current === taskId) return;
+    deepLinkedTaskId.current = taskId;
+    const found = (tasks ?? []).find((t) => t.id === taskId);
+    if (found) {
+      setOpenTask(found);
+      return;
+    }
+    getTask(supabase, taskId).then(({ data }) => {
+      if (data) setOpenTask(data);
+      // else: task not found / deleted / not owned by this user — ignore silently.
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["tasks", viewKey] });

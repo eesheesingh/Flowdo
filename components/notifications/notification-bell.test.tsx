@@ -6,7 +6,8 @@ import { NotificationBell } from "./notification-bell";
 
 const markAllRead = vi.fn().mockResolvedValue({ error: null });
 const markRead = vi.fn().mockResolvedValue({ error: null });
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: (...a: unknown[]) => push(...a), refresh: vi.fn() }) }));
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({}) }));
 vi.mock("@/lib/notifications/notifications", () => ({
   markAllRead: (...a: unknown[]) => markAllRead(...a),
@@ -62,6 +63,7 @@ describe("NotificationBell", () => {
     expect(supabaseArg).toEqual({});
     expect(userIdArg).toBe("u");
     expect(itemsArg).toEqual([expect.objectContaining({ key: "overdue:a", taskId: "a" })]);
+    expect(push).toHaveBeenCalledWith("/app/upcoming?task=a");
   });
 
   it("rolls back the optimistic dismissal and shows an error when markRead fails", async () => {

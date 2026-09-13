@@ -61,6 +61,12 @@ export async function updateTask(
   return { data, error: null };
 }
 
+export async function getTask(supabase: Client, taskId: string) {
+  const { data, error } = await supabase.from("tasks").select("*").eq("id", taskId).single();
+  if (error) return { data: null, error: "Task not found." };
+  return { data, error: null };
+}
+
 export async function deleteTask(supabase: Client, taskId: string) {
   const { error } = await supabase.from("tasks").delete().eq("id", taskId);
   if (error) return { error: "Couldn't delete task. Please try again." };

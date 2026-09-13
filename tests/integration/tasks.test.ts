@@ -9,6 +9,7 @@ import {
   reopenTask,
   listTasks,
   updateTaskPosition,
+  getTask,
 } from "@/lib/tasks/tasks";
 
 const admin = createAdminClient();
@@ -225,5 +226,30 @@ describe("updateTaskPosition", () => {
     const { data: afterUpdate } = await listTasks(owner.client, {});
     const updated = afterUpdate?.find((t) => t.id === task!.id);
     expect(updated?.position).toBe(42);
+  });
+});
+
+describe("getTask", () => {
+  it("fetches a single task by id owned by the caller", async () => {
+    const owner = await createConfirmedTestUser(admin, "tasks-get@example.com", "Password123!");
+    createdUserIds.push(owner.userId);
+
+    const { data: task } = await createTask(owner.client, owner.userId, { title: "Find me" });
+    const { data, error } = await getTask(owner.client, task!.id);
+    expect(error).toBeNull();
+    expect(data?.id).toBe(task!.id);
+    expect(data?.title).toBe("Find me");
+  });
+
+  it("returns an error for a nonexistent task or one belonging to another user (RLS)", async () => {
+    const owner = await createConfirmedTestUser(admin, "tasks-get-owner@example.com", "Password123!");
+    const attacker = await createConfirmedTestUser(admin, "tasks-get-attacker@example.com", "Password123!");
+    createdUserIds.push(owner.userId, attacker.userId);
+
+    const { data: task } = await createTask(owner.client, owner.userId, { title: "Private" });
+
+    const { data, error } = await getTask(attacker.client, task!.id);
+    expect(data).toBeNull();
+    expect(error).toBe("Task not found.");
   });
 });

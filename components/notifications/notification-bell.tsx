@@ -46,7 +46,7 @@ export function NotificationBell({
       return;
     }
     setMutationError(null);
-    if (n.taskId) router.push("/app/upcoming");
+    if (n.taskId) router.push(`/app/upcoming?task=${n.taskId}`);
     router.refresh();
   }
 
