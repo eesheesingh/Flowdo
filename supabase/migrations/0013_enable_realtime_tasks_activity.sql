@@ -1,0 +1,12 @@
+-- Neither flowdo.tasks nor flowdo.activity_logs (nor any other flowdo table)
+-- has been added to the supabase_realtime publication before now -- this is
+-- the first. It lets clients subscribe to postgres_changes on them
+-- (CLAUDE.md §23: "shared project updates", "task changes", "project
+-- activity"). Publishing a table does not bypass RLS: Realtime still
+-- enforces each subscriber's own RLS policies when deciding which change
+-- events that specific client actually receives. That's exactly why
+-- migration 0012's project-member-aware tasks_select_own broadening matters
+-- here too -- without it, a project member subscribed to flowdo.tasks would
+-- never receive change events for tasks they don't personally own, even
+-- though they can now read them via a normal SELECT.
+alter publication supabase_realtime add table flowdo.tasks, flowdo.activity_logs;

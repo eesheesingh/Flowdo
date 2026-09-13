@@ -201,4 +201,12 @@ describe("phase 4 migrations", () => {
       queryLocalDb(`set local role anon; select flowdo.find_user_id_by_email('phase4-lookup@example.com') as id;`)
     ).rejects.toThrow(/permission denied/i);
   });
+
+  it("0013: flowdo.tasks and flowdo.activity_logs are in the supabase_realtime publication", async () => {
+    const rows = await queryLocalDb(
+      `select tablename from pg_publication_tables
+       where pubname = 'supabase_realtime' and schemaname = 'flowdo'`
+    );
+    expect(rows.rows.map((r) => r.tablename).sort()).toEqual(["activity_logs", "tasks"]);
+  });
 });
