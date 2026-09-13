@@ -22,8 +22,11 @@ export default async function AnalyticsPage({
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const [{ data: tasks }, { data: projects }] = await Promise.all([
-    getAnalyticsSnapshot(supabase),
+    getAnalyticsSnapshot(supabase, user!.id),
     listProjects(supabase, { includeArchived: true }),
   ]);
 
