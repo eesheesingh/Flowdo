@@ -46,6 +46,7 @@ export function TaskView({
   showProjectFilter = false,
   hideStatusFilter = false,
   hideManualSort = false,
+  currentUserRole,
 }: {
   initialTasks: TaskRowData[];
   projects: ProjectRowData[];
@@ -58,7 +59,16 @@ export function TaskView({
   showProjectFilter?: boolean;
   hideStatusFilter?: boolean;
   hideManualSort?: boolean;
+  // Only the project detail page has a concept of project roles; every other
+  // caller (today/upcoming/inbox/completed) has no membership model at all,
+  // so this stays optional and undefined means "full access" (today's
+  // behavior, unchanged). VIEWER is the only role that matters here -- it's
+  // the only one RLS actually treats as read-only (tasks_insert_own/
+  // tasks_update_own require role <> 'VIEWER'); OWNER/ADMIN/MEMBER can all
+  // write, so nothing else needs gating.
+  currentUserRole?: "OWNER" | "ADMIN" | "MEMBER" | "VIEWER";
 }) {
+  const isViewer = currentUserRole === "VIEWER";
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -201,11 +211,13 @@ export function TaskView({
           {mutationError}
         </div>
       )}
-      <QuickAdd
-        onCreate={async (title) => {
-          await createMutation.mutateAsync(title);
-        }}
-      />
+      {!isViewer && (
+        <QuickAdd
+          onCreate={async (title) => {
+            await createMutation.mutateAsync(title);
+          }}
+        />
+      )}
       <TaskFilters
         currentFilters={userFilters}
         onChange={updateUrlFilters}
@@ -220,11 +232,12 @@ export function TaskView({
         onOpenTask={setOpenTask}
         onToggleComplete={(task) => toggleCompleteMutation.mutate(task)}
         onReorder={
-          enableReorder ? (taskId, position) => reorderMutation.mutate({ taskId, position }) : undefined
+          enableReorder && !isViewer ? (taskId, position) => reorderMutation.mutate({ taskId, position }) : undefined
         }
         emptyTitle={activeEmptyState.title}
         emptyDescription={activeEmptyState.description}
         labelsByTask={labelsByTask}
+        readOnly={isViewer}
       />
       {openTask && (
         <TaskDetailPanel
@@ -244,6 +257,7 @@ export function TaskView({
             deleteMutation.mutate(taskId);
             setOpenTask(null);
           }}
+          readOnly={isViewer}
         />
       )}
     </div>

@@ -28,11 +28,13 @@ export function TaskRow({
   onOpen,
   onToggleComplete,
   labels,
+  readOnly = false,
 }: {
   task: TaskRowData;
   onOpen: (task: TaskRowData) => void;
   onToggleComplete: (task: TaskRowData) => void;
   labels?: { id: string; name: string; color: string }[];
+  readOnly?: boolean;
 }) {
   const isCompleted = task.status === "COMPLETED";
 
@@ -42,13 +44,14 @@ export function TaskRow({
         type="checkbox"
         role="checkbox"
         checked={isCompleted}
+        disabled={readOnly}
         onChange={(e) => {
           e.stopPropagation();
           onToggleComplete(task);
         }}
         onClick={(e) => e.stopPropagation()}
         aria-label={isCompleted ? "Reopen task" : "Complete task"}
-        className="h-4 w-4 shrink-0 rounded border-border"
+        className="h-4 w-4 shrink-0 rounded border-border disabled:cursor-not-allowed disabled:opacity-50"
       />
       <button
         type="button"

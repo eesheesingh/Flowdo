@@ -69,6 +69,7 @@ export default async function ProjectDetailPage({
           filtered: { title: "No tasks match your filters", description: "Try clearing a filter or search term." },
         }}
         enableReorder
+        currentUserRole={currentUserRole}
       />
       <div className="space-y-3">
         <h2 className="text-sm font-medium text-muted-foreground">Activity</h2>

@@ -133,6 +133,48 @@ describe("TaskView ?task= deep link", () => {
   });
 });
 
+describe("TaskView role gating (Finding 6)", () => {
+  function renderWithRole(role: "VIEWER" | "MEMBER" | undefined) {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    return render(
+      <QueryClientProvider client={qc}>
+        <TaskView
+          initialTasks={[task]}
+          projects={[]}
+          labels={[]}
+          userId="u1"
+          baseFilters={{}}
+          viewKey="project-p1"
+          emptyState={{
+            default: { title: "d", description: "d" },
+            filtered: { title: "f", description: "f" },
+          }}
+          enableReorder
+          currentUserRole={role}
+        />
+      </QueryClientProvider>
+    );
+  }
+
+  it("with no currentUserRole prop, shows the full write UI (unchanged behavior)", () => {
+    renderWithRole(undefined);
+    expect(screen.getByPlaceholderText(/add a task/i)).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /complete task/i })).toBeEnabled();
+  });
+
+  it("with currentUserRole='VIEWER', hides quick-add and disables the complete checkbox", () => {
+    renderWithRole("VIEWER");
+    expect(screen.queryByPlaceholderText(/add a task/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /complete task/i })).toBeDisabled();
+  });
+
+  it("with currentUserRole='MEMBER', behaves the same as the default (full write UI)", () => {
+    renderWithRole("MEMBER");
+    expect(screen.getByPlaceholderText(/add a task/i)).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /complete task/i })).toBeEnabled();
+  });
+});
+
 describe("TaskView realtime", () => {
   it("subscribes to realtime task changes scoped to the view's projectId", () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });

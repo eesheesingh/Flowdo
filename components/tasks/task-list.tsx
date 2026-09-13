@@ -30,11 +30,13 @@ function SortableTaskRow({
   onOpen,
   onToggleComplete,
   labels,
+  readOnly,
 }: {
   task: TaskRowData;
   onOpen: (task: TaskRowData) => void;
   onToggleComplete: (task: TaskRowData) => void;
   labels?: LabelChip[];
+  readOnly?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -51,7 +53,7 @@ function SortableTaskRow({
         <GripVertical className="h-4 w-4" />
       </button>
       <div className="flex-1">
-        <TaskRow task={task} onOpen={onOpen} onToggleComplete={onToggleComplete} labels={labels} />
+        <TaskRow task={task} onOpen={onOpen} onToggleComplete={onToggleComplete} labels={labels} readOnly={readOnly} />
       </div>
     </div>
   );
@@ -65,6 +67,7 @@ export function TaskList({
   emptyTitle,
   emptyDescription,
   labelsByTask,
+  readOnly = false,
 }: {
   tasks: TaskRowData[];
   onOpenTask: (task: TaskRowData) => void;
@@ -73,6 +76,7 @@ export function TaskList({
   emptyTitle: string;
   emptyDescription: string;
   labelsByTask?: Map<string, LabelChip[]>;
+  readOnly?: boolean;
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -93,6 +97,7 @@ export function TaskList({
             onOpen={onOpenTask}
             onToggleComplete={onToggleComplete}
             labels={labelsByTask?.get(task.id)}
+            readOnly={readOnly}
           />
         ))}
       </div>
@@ -125,6 +130,7 @@ export function TaskList({
               onOpen={onOpenTask}
               onToggleComplete={onToggleComplete}
               labels={labelsByTask?.get(task.id)}
+              readOnly={readOnly}
             />
           ))}
         </div>

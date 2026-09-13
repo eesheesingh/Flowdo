@@ -31,6 +31,7 @@ export function TaskDetailPanel({
   onSave,
   onDelete,
   onLabelsChange,
+  readOnly = false,
 }: {
   task: TaskRowData;
   projects: ProjectRowData[];
@@ -40,6 +41,7 @@ export function TaskDetailPanel({
   onSave: (taskId: string, input: TaskInput) => Promise<void>;
   onDelete: (taskId: string) => void;
   onLabelsChange?: (taskId: string, labelIds: string[]) => Promise<void>;
+  readOnly?: boolean;
 }) {
   const [labelIds, setLabelIds] = React.useState<string[]>([]);
   const { data: assignedLabelIds } = useQuery({
@@ -93,6 +95,12 @@ export function TaskDetailPanel({
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col gap-4">
+            {/* A VIEWER can open this panel to read a task's details (RLS still
+                allows SELECT), just not edit them -- native <fieldset disabled>
+                greys out and disables every form control it contains in one
+                shot, no per-field wiring needed. `contents` keeps it from
+                affecting the form's own flex layout. */}
+            <fieldset disabled={readOnly} className="contents">
             <div className="space-y-2">
               <Label htmlFor="title">Title</Label>
               <Input id="title" {...register("title")} />
@@ -179,6 +187,7 @@ export function TaskDetailPanel({
                 {isSubmitting ? "Saving…" : "Save"}
               </Button>
             </div>
+            </fieldset>
           </form>
         </Dialog.Content>
       </Dialog.Portal>
