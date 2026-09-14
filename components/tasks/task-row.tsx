@@ -1,4 +1,5 @@
-import { Repeat } from "lucide-react";
+import { Repeat, CalendarDays } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/types/database";
 
@@ -9,6 +10,13 @@ const PRIORITY_LABEL: Record<TaskRowData["priority"], string> = {
   MEDIUM: "Medium",
   HIGH: "High",
   URGENT: "Urgent",
+};
+
+const PRIORITY_CLASS: Record<TaskRowData["priority"], string> = {
+  LOW: "bg-surface-container text-on-surface-variant",
+  MEDIUM: "",
+  HIGH: "bg-tertiary-fixed text-on-tertiary-fixed-variant",
+  URGENT: "bg-error-container text-on-error-container",
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -39,64 +47,59 @@ export function TaskRow({
   const isCompleted = task.status === "COMPLETED";
 
   return (
-    <div className="flex items-center gap-3 rounded-md border border-border px-3 py-2 hover:bg-muted">
-      <input
-        type="checkbox"
-        role="checkbox"
+    <div className="group flex items-start gap-3 rounded-xl bg-surface-lowest p-3 shadow-xs transition-all hover:shadow-sm">
+      <Checkbox
         checked={isCompleted}
         disabled={readOnly}
-        onChange={(e) => {
-          e.stopPropagation();
-          onToggleComplete(task);
-        }}
+        onCheckedChange={() => onToggleComplete(task)}
         onClick={(e) => e.stopPropagation()}
         aria-label={isCompleted ? "Reopen task" : "Complete task"}
-        className="h-4 w-4 shrink-0 rounded border-border disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-0.5 shrink-0"
       />
       <button
         type="button"
         onClick={() => onOpen(task)}
-        className={cn(
-          "flex-1 truncate text-left text-sm",
-          isCompleted && "text-muted-foreground line-through"
-        )}
+        className="min-w-0 flex-1 text-left"
       >
-        {task.title}
-      </button>
-      {labels && labels.length > 0 && (
-        <span className="flex shrink-0 gap-1">
-          {labels.map((l) => (
-            <span
-              key={l.id}
-              className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs"
-              style={{ backgroundColor: `${l.color}20`, color: l.color }}
-            >
-              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: l.color }} aria-hidden="true" />
-              {l.name}
-            </span>
-          ))}
-        </span>
-      )}
-      {task.priority !== "MEDIUM" && (
         <span
           className={cn(
-            "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-            task.priority === "URGENT" && "bg-destructive/10 text-destructive",
-            task.priority === "HIGH" && "bg-orange-500/10 text-orange-600",
-            task.priority === "LOW" && "bg-muted text-muted-foreground"
+            "block truncate text-sm text-on-surface",
+            isCompleted && "text-on-surface-variant line-through"
           )}
         >
-          {PRIORITY_LABEL[task.priority]}
+          {task.title}
         </span>
-      )}
-      {task.due_date && (
-        <span className="shrink-0 text-xs text-muted-foreground">
-          {formatDueDate(task.due_date)}
-        </span>
-      )}
-      {task.recurrence !== "NEVER" && (
-        <Repeat className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-label="Repeats" />
-      )}
+      </button>
+      <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+        {labels && labels.length > 0 && (
+          <span className="flex shrink-0 gap-1">
+            {labels.map((l) => (
+              <span
+                key={l.id}
+                className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs"
+                style={{ backgroundColor: `${l.color}20`, color: l.color }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: l.color }} aria-hidden="true" />
+                {l.name}
+              </span>
+            ))}
+          </span>
+        )}
+        {task.priority !== "MEDIUM" && (
+          <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-xs font-medium", PRIORITY_CLASS[task.priority])}>
+            {PRIORITY_LABEL[task.priority]}
+          </span>
+        )}
+        {task.due_date && (
+          <span className="flex shrink-0 items-center gap-1 text-xs text-on-surface-variant">
+            <CalendarDays className="h-3 w-3" />
+            {formatDueDate(task.due_date)}
+          </span>
+        )}
+        {task.recurrence !== "NEVER" && (
+          <Repeat className="h-3.5 w-3.5 shrink-0 text-on-surface-variant" aria-label="Repeats" />
+        )}
+      </div>
     </div>
   );
 }

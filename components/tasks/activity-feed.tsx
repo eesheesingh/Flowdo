@@ -29,16 +29,16 @@ export function ActivityFeed({ taskId, projectId }: { taskId?: string; projectId
   });
 
   return (
-    <section className="space-y-2 border-t border-border pt-4">
-      <h3 className="text-sm font-medium">Activity</h3>
+    <section className="space-y-2">
+      <span className="text-xs font-medium uppercase tracking-wider text-on-surface-variant">Activity</span>
       {rows.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No activity yet.</p>
+        <p className="text-xs text-on-surface-variant">No activity yet.</p>
       ) : (
         <ul className="space-y-1.5">
           {rows.map((r) => (
-            <li key={r.id} className="flex items-center justify-between gap-2 text-xs">
+            <li key={r.id} className="flex items-center justify-between gap-2 text-xs text-on-surface">
               <span>{describeActivity(r)}</span>
-              <span className="shrink-0 text-muted-foreground">{relative(r.created_at)}</span>
+              <span className="shrink-0 text-on-surface-variant">{relative(r.created_at)}</span>
             </li>
           ))}
         </ul>

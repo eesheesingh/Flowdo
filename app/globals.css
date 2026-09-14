@@ -3,31 +3,126 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 240 10% 12%;
-  --primary: 243 75% 59%;
-  --primary-foreground: 0 0% 100%;
-  --muted: 240 5% 96%;
-  --muted-foreground: 240 4% 46%;
-  --border: 240 6% 90%;
-  --destructive: 0 72% 51%;
+  /* Mindful Journal Todo — light palette (source of truth: Stitch design system) */
+  --background: 274 33% 98%;
+  --foreground: 240 8% 10%;
+
+  --surface: 274 33% 98%;
+  --surface-lowest: 0 0% 100%;
+  --surface-low: 285 20% 96%;
+  --surface-container: 270 12% 94%;
+  --surface-high: 260 8% 91%;
+  --surface-highest: 260 8% 88%;
+
+  --on-surface: 240 8% 10%;
+  --on-surface-variant: 247 8% 28%;
+  --outline: 245 6% 47%;
+  --outline-variant: 251 12% 79%;
+
+  --primary: 249 65% 47%;
+  --primary-container: 248 65% 55%;
+  --on-primary: 0 0% 100%;
+  --on-primary-container: 249 100% 92%;
+  --primary-fixed: 249 100% 92%;
+  --on-primary-fixed: 245 100% 20%;
+
+  --secondary: 247 8% 39%;
+  --secondary-container: 249 45% 90%;
+  --on-secondary-container: 245 8% 42%;
+  --secondary-fixed: 249 45% 90%;
+  --on-secondary-fixed: 245 20% 12%;
+  --on-secondary-fixed-variant: 246 10% 27%;
+
+  --tertiary: 25 100% 25%;
+  --tertiary-container: 27 100% 32%;
+  --tertiary-fixed: 20 100% 90%;
+  --on-tertiary-fixed: 20 84% 10%;
+  --on-tertiary-fixed-variant: 20 65% 25%;
+
+  --error: 0 65% 40%;
+  --error-container: 4 100% 92%;
+  --on-error-container: 5 100% 29%;
+  --destructive: var(--error);
   --destructive-foreground: 0 0% 100%;
-  --radius: 0.625rem;
+
+  --inverse-surface: 240 3% 19%;
+  --inverse-on-surface: 280 14% 95%;
+  --inverse-primary: 249 100% 83%;
+
+  /* shadcn-compatible aliases */
+  --border: var(--outline-variant);
+  --muted: var(--surface-container);
+  --muted-foreground: var(--on-surface-variant);
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
 }
 
 .dark {
-  --background: 240 10% 8%;
-  --foreground: 0 0% 96%;
-  --primary: 243 75% 68%;
-  --primary-foreground: 240 10% 8%;
-  --muted: 240 6% 16%;
-  --muted-foreground: 240 5% 65%;
-  --border: 240 6% 20%;
-  --destructive: 0 63% 55%;
-  --destructive-foreground: 0 0% 96%;
+  --background: 240 8% 8%;
+  --foreground: 270 14% 91%;
+
+  --surface: 240 8% 8%;
+  --surface-lowest: 240 8% 12%;
+  --surface-low: 240 7% 14%;
+  --surface-container: 240 6% 17%;
+  --surface-high: 240 6% 21%;
+  --surface-highest: 240 5% 26%;
+
+  --on-surface: 270 14% 91%;
+  --on-surface-variant: 251 12% 79%;
+  --outline: 250 8% 61%;
+  --outline-variant: 247 8% 28%;
+
+  --primary: 249 100% 83%;
+  --primary-container: 248 55% 40%;
+  --on-primary: 245 100% 15%;
+  --on-primary-container: 249 100% 92%;
+  --primary-fixed: 249 100% 92%;
+  --on-primary-fixed: 245 100% 20%;
+
+  --secondary: 251 12% 79%;
+  --secondary-container: 246 15% 27%;
+  --on-secondary-container: 249 45% 88%;
+  --secondary-fixed: 249 45% 90%;
+  --on-secondary-fixed: 245 20% 12%;
+  --on-secondary-fixed-variant: 246 10% 27%;
+
+  --tertiary: 20 100% 80%;
+  --tertiary-container: 20 60% 28%;
+  --tertiary-fixed: 20 100% 90%;
+  --on-tertiary-fixed: 20 84% 10%;
+  --on-tertiary-fixed-variant: 20 65% 25%;
+
+  --error: 5 100% 82%;
+  --error-container: 5 60% 27%;
+  --on-error-container: 5 100% 92%;
+  --destructive: var(--error);
+  --destructive-foreground: 5 100% 12%;
+
+  --inverse-surface: 270 14% 91%;
+  --inverse-on-surface: 240 8% 15%;
+  --inverse-primary: 249 65% 47%;
+
+  --border: var(--outline-variant);
+  --muted: var(--surface-container);
+  --muted-foreground: var(--on-surface-variant);
 }
 
 body {
   background: hsl(var(--background));
   color: hsl(var(--foreground));
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--outline-variant));
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
 }

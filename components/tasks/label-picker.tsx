@@ -38,12 +38,12 @@ export function LabelPicker({
               aria-pressed={on}
               onClick={() => toggle(l.id)}
               className={
-                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs " +
-                (on ? "border-transparent text-primary-foreground" : "border-border text-muted-foreground")
+                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors " +
+                (on ? "text-white" : "bg-surface-container text-on-surface-variant hover:bg-surface-high")
               }
               style={on ? { backgroundColor: l.color } : undefined}
             >
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: l.color }} aria-hidden="true" />
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: on ? "rgba(255,255,255,0.8)" : l.color }} aria-hidden="true" />
               {l.name}
             </button>
           );
@@ -51,7 +51,7 @@ export function LabelPicker({
         <button
           type="button"
           onClick={() => setManaging(true)}
-          className="inline-flex items-center gap-1 rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-muted-foreground"
+          className="inline-flex items-center gap-1 rounded-full bg-surface-container px-2.5 py-1 text-xs text-on-surface-variant transition-colors hover:bg-surface-high"
         >
           <Plus className="h-3 w-3" /> New label
         </button>

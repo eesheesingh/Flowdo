@@ -210,3 +210,30 @@ export async function listTasks(supabase: Client, filters: ListTasksFilters) {
   if (error) return { data: null, error: "Couldn't load tasks. Please try again." };
   return { data: data as TaskRow[], error: null };
 }
+
+/** Consecutive days up to and including today with at least one completed task. */
+export function computeCompletionStreak(completedAtDates: string[], today: Date = new Date()): number {
+  const completedDays = new Set(completedAtDates.map((d) => d.slice(0, 10)));
+  let streak = 0;
+  const cursor = new Date(today);
+  for (;;) {
+    const key = cursor.toISOString().slice(0, 10);
+    if (!completedDays.has(key)) break;
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+export async function getCompletionStreak(supabase: Client, userId: string) {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("completed_at")
+    .eq("user_id", userId)
+    .eq("status", "COMPLETED")
+    .not("completed_at", "is", null)
+    .order("completed_at", { ascending: false })
+    .limit(400);
+  if (error || !data) return 0;
+  return computeCompletionStreak(data.map((t) => t.completed_at as string));
+}

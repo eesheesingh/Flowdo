@@ -44,13 +44,13 @@ beforeEach(() => {
 describe("SubtaskSection", () => {
   it("shows progress as done/total with a bar", async () => {
     wrap(<SubtaskSection taskId="t1" userId="u1" />);
-    expect(await screen.findByText("1 / 2 completed")).toBeInTheDocument();
+    expect(await screen.findByText("1 of 2 done")).toBeInTheDocument();
   });
 
   it("adds a subtask via the inline input", async () => {
     const user = userEvent.setup();
     wrap(<SubtaskSection taskId="t1" userId="u1" />);
-    await screen.findByText("1 / 2 completed");
+    await screen.findByText("1 of 2 done");
     await user.type(screen.getByPlaceholderText(/add a subtask/i), "Third{Enter}");
     expect(createSubtask).toHaveBeenCalledWith(expect.anything(), "u1", "t1", "Third");
   });

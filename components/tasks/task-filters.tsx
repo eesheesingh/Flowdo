@@ -2,11 +2,15 @@
 import * as React from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import type { UserFilterParams } from "@/lib/tasks/filter-params";
 import type { Database } from "@/types/database";
 
 type ProjectRowData = Database["flowdo"]["Tables"]["projects"]["Row"];
 type LabelRowData = Database["flowdo"]["Tables"]["labels"]["Row"];
+
+const selectClass =
+  "h-9 rounded-lg bg-surface-container-low px-3 text-sm text-on-surface outline-none transition-colors hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-60";
 
 export function TaskFilters({
   currentFilters,
@@ -47,13 +51,13 @@ export function TaskFilters({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className="relative flex-1 min-w-[160px]">
-        <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <div className="relative min-w-[160px] flex-1">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-outline" />
         <Input
           placeholder="Search tasks…"
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
-          className="pl-8"
+          className="rounded-xl pl-9"
         />
       </div>
 
@@ -62,7 +66,7 @@ export function TaskFilters({
           aria-label="Status"
           value={currentFilters.status ?? ""}
           onChange={(e) => onChange({ ...currentFilters, status: (e.target.value || undefined) as UserFilterParams["status"] })}
-          className="h-10 rounded-md border border-border bg-background px-2 text-sm"
+          className={selectClass}
         >
           <option value="">Any status</option>
           <option value="TODO">To do</option>
@@ -76,7 +80,7 @@ export function TaskFilters({
         aria-label="Priority"
         value={currentFilters.priority ?? ""}
         onChange={(e) => onChange({ ...currentFilters, priority: (e.target.value || undefined) as UserFilterParams["priority"] })}
-        className="h-10 rounded-md border border-border bg-background px-2 text-sm"
+        className={selectClass}
       >
         <option value="">Any priority</option>
         <option value="LOW">Low</option>
@@ -90,7 +94,7 @@ export function TaskFilters({
           aria-label="Label"
           value={currentFilters.labelId ?? ""}
           onChange={(e) => onChange({ ...currentFilters, labelId: e.target.value || undefined })}
-          className="h-10 rounded-md border border-border bg-background px-2 text-sm"
+          className={selectClass}
         >
           <option value="">Any label</option>
           {labels.map((l) => (
@@ -106,7 +110,7 @@ export function TaskFilters({
           aria-label="Project"
           value={currentFilters.projectId ?? ""}
           onChange={(e) => onChange({ ...currentFilters, projectId: e.target.value || undefined })}
-          className="h-10 rounded-md border border-border bg-background px-2 text-sm"
+          className={selectClass}
         >
           <option value="">Any project</option>
           {projects.map((project) => (
@@ -121,13 +125,7 @@ export function TaskFilters({
         // Completed view: sorting is always by completion date and cannot be
         // changed, so render a disabled control with only that one option
         // instead of a dropdown full of options that silently do nothing.
-        <select
-          aria-label="Sort"
-          value="completed_at"
-          disabled
-          onChange={() => {}}
-          className="h-10 rounded-md border border-border bg-background px-2 text-sm text-muted-foreground disabled:cursor-not-allowed disabled:opacity-70"
-        >
+        <select aria-label="Sort" value="completed_at" disabled onChange={() => {}} className={cn(selectClass)}>
           <option value="completed_at">Completion date</option>
         </select>
       ) : (
@@ -135,7 +133,7 @@ export function TaskFilters({
           aria-label="Sort"
           value={currentFilters.sort ?? "manual"}
           onChange={(e) => onChange({ ...currentFilters, sort: e.target.value as UserFilterParams["sort"] })}
-          className="h-10 rounded-md border border-border bg-background px-2 text-sm"
+          className={selectClass}
         >
           <option value="manual">Manual order</option>
           <option value="due_date">Due date</option>
