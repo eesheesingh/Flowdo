@@ -4,7 +4,7 @@ import { listTasks, getCompletionStreak } from "@/lib/tasks/tasks";
 import { listProjects } from "@/lib/projects/projects";
 import { listLabels } from "@/lib/labels/labels";
 import { buildFullFilters } from "@/lib/tasks/filter-params";
-import { TaskView } from "@/components/tasks/task-view";
+import { CompletedTaskView } from "./completed-task-view";
 import type { Database } from "@/types/database";
 
 type TaskRow = Database["flowdo"]["Tables"]["tasks"]["Row"];
@@ -14,21 +14,6 @@ type TaskRow = Database["flowdo"]["Tables"]["tasks"]["Row"];
 // (see the identical convention in components/tasks/task-row.tsx).
 function dayKey(iso: string): string {
   return iso.slice(0, 10);
-}
-
-function dayLabel(iso: string, now: Date): string {
-  const key = dayKey(iso);
-  const todayKey = dayKey(now.toISOString());
-  const yesterday = new Date(now);
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-  if (key === todayKey) return "Today";
-  if (key === dayKey(yesterday.toISOString())) return "Yesterday";
-  return new Date(`${key}T00:00:00.000Z`).toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
 }
 
 function last7DayCounts(tasks: TaskRow[], now: Date): number[] {
@@ -80,7 +65,7 @@ export default async function CompletedPage({
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 pb-12">
       <header className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <h1 className="font-serif text-3xl text-on-surface">Completed</h1>
+          <h1 className="font-serif text-4xl tracking-tight text-on-surface sm:text-5xl">Completed</h1>
           <span className="rounded-full bg-surface-container px-2.5 py-0.5 text-xs text-on-surface-variant">
             Archive
           </span>
@@ -126,21 +111,12 @@ export default async function CompletedPage({
         </div>
       </div>
 
-      <TaskView
+      <CompletedTaskView
         initialTasks={tasks ?? []}
         projects={projects ?? []}
         labels={labels ?? []}
         userId={user!.id}
         baseFilters={baseFilters}
-        viewKey="completed"
-        emptyState={{
-          default: { title: "No completed tasks yet", description: "Tasks you finish will show up here." },
-          filtered: { title: "No completed tasks match your filters", description: "Try clearing a filter or search term." },
-        }}
-        showProjectFilter
-        hideStatusFilter
-        hideManualSort
-        groupBy={(task) => dayLabel(task.completed_at!, now)}
       />
     </div>
   );

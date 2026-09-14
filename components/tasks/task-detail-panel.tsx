@@ -3,7 +3,7 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
-import { NotebookPen } from "lucide-react";
+import { NotebookPen, ChevronDown } from "lucide-react";
 import { taskSchema, type TaskInput } from "@/lib/validations/tasks";
 import { createClient } from "@/lib/supabase/client";
 import { listTaskLabels } from "@/lib/tasks/task-labels";
@@ -25,7 +25,7 @@ type TaskRowData = Database["flowdo"]["Tables"]["tasks"]["Row"];
 type ProjectRowData = Database["flowdo"]["Tables"]["projects"]["Row"];
 
 const selectClass =
-  "flex h-9 w-full rounded-lg bg-surface-lowest px-2.5 text-sm text-on-surface outline-none transition-colors hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-9 w-full appearance-none rounded-lg bg-surface-lowest px-2.5 pr-8 text-sm text-on-surface outline-none transition-colors hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-50";
 
 export function TaskDetailPanel({
   task,
@@ -111,7 +111,7 @@ export function TaskDetailPanel({
                     <input
                       id="title"
                       {...register("title")}
-                      className="w-full rounded-md bg-transparent px-1 font-serif text-xl text-on-surface transition-colors placeholder:text-outline focus:bg-surface-container-low focus:outline-none"
+                      className="w-full rounded-md bg-transparent px-1 font-serif text-2xl tracking-tight text-on-surface transition-colors placeholder:text-outline focus:bg-surface-container-low focus:outline-none"
                     />
                     <FormError message={errors.title?.message} />
                   </div>
@@ -120,8 +120,8 @@ export function TaskDetailPanel({
               </div>
 
               <div className="rounded-xl bg-surface-container-low p-4">
-                <span className="mb-1.5 flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-on-surface-variant">
-                  <NotebookPen className="h-3.5 w-3.5" /> Notes
+                <span className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-on-surface-variant">
+                  <NotebookPen className="h-4 w-4" /> Notes
                 </span>
                 <Textarea
                   id="description"
@@ -133,12 +133,9 @@ export function TaskDetailPanel({
               </div>
 
               <div className="space-y-2">
-                <span className="block text-xs font-medium uppercase tracking-wider text-on-surface-variant">
-                  Timing &amp; cadence
-                </span>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5 rounded-xl bg-surface-container p-3">
-                    <Label htmlFor="dueDate" className="text-xs text-on-surface-variant">
+                    <Label htmlFor="dueDate" className="text-sm text-on-surface-variant">
                       Due date
                     </Label>
                     <Input
@@ -151,15 +148,18 @@ export function TaskDetailPanel({
                     />
                   </div>
                   <div className="space-y-1.5 rounded-xl bg-surface-container p-3">
-                    <Label htmlFor="priority" className="text-xs text-on-surface-variant">
+                    <Label htmlFor="priority" className="text-sm text-on-surface-variant">
                       Priority
                     </Label>
-                    <select id="priority" {...register("priority")} className={selectClass}>
-                      <option value="LOW">Low</option>
-                      <option value="MEDIUM">Medium</option>
-                      <option value="HIGH">High</option>
-                      <option value="URGENT">Urgent</option>
-                    </select>
+                    <div className="relative">
+                      <select id="priority" {...register("priority")} className={selectClass}>
+                        <option value="LOW">Low</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="HIGH">High</option>
+                        <option value="URGENT">Urgent</option>
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-outline" />
+                    </div>
                   </div>
                 </div>
                 <div className="rounded-xl bg-surface-container p-3">
@@ -168,36 +168,39 @@ export function TaskDetailPanel({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="projectId" className="text-xs font-medium uppercase tracking-wider text-on-surface-variant">
+                <Label htmlFor="projectId" className="text-sm font-medium text-on-surface-variant">
                   List
                 </Label>
-                <select
-                  id="projectId"
-                  {...register("projectId", {
-                    setValueAs: (value: string) => (value === "" ? null : value),
-                  })}
-                  className={selectClass + " bg-surface-container-low hover:bg-surface-container"}
-                >
-                  <option value="">No list (Inbox)</option>
-                  {task.project_id && !projects.some((project) => project.id === task.project_id) && (
-                    // The task's project isn't in `projects` (listProjects() excludes archived
-                    // projects by default), so without this fallback option the select would
-                    // silently fall back to "No list (Inbox)" for an archived project's task.
-                    // We don't have the archived project's name here, so label it generically.
-                    <option value={task.project_id}>Archived list</option>
-                  )}
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    id="projectId"
+                    {...register("projectId", {
+                      setValueAs: (value: string) => (value === "" ? null : value),
+                    })}
+                    className={selectClass + " bg-surface-container-low hover:bg-surface-container"}
+                  >
+                    <option value="">No list (Inbox)</option>
+                    {task.project_id && !projects.some((project) => project.id === task.project_id) && (
+                      // The task's project isn't in `projects` (listProjects() excludes archived
+                      // projects by default), so without this fallback option the select would
+                      // silently fall back to "No list (Inbox)" for an archived project's task.
+                      // We don't have the archived project's name here, so label it generically.
+                      <option value={task.project_id}>Archived list</option>
+                    )}
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-outline" />
+                </div>
               </div>
 
               <SubtaskSection taskId={task.id} userId={userId} />
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium uppercase tracking-wider text-on-surface-variant">Labels</Label>
+                <Label className="text-sm font-medium text-on-surface-variant">Labels</Label>
                 <LabelPicker userId={userId} value={labelIds} onChange={setLabelIds} />
               </div>
 

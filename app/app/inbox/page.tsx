@@ -44,10 +44,7 @@ export default async function InboxPage({
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 pb-12">
       <header className="flex flex-col gap-1">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
-          <span>Triage &amp; Reflection</span>
-        </div>
-        <h1 className="font-serif text-3xl text-on-surface">Inbox</h1>
+        <h1 className="font-serif text-4xl tracking-tight text-on-surface sm:text-5xl">Inbox</h1>
         <p className="max-w-xl text-on-surface-variant">
           Everything you&apos;ve quietly captured, waiting for a calm moment to organize.
         </p>
