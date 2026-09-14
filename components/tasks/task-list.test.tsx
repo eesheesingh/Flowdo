@@ -67,6 +67,38 @@ describe("TaskList", () => {
     expect(screen.queryByLabelText(/drag to reorder/i)).not.toBeInTheDocument();
   });
 
+  it("groups rows under a heading per distinct groupBy label when reordering is disabled", () => {
+    render(
+      <TaskList
+        tasks={tasks}
+        onOpenTask={vi.fn()}
+        onToggleComplete={vi.fn()}
+        emptyTitle="Empty"
+        emptyDescription="Nothing here"
+        groupBy={(t) => (t.id === "1" ? "Tomorrow" : "Friday")}
+      />
+    );
+    expect(screen.getByText("Tomorrow")).toBeInTheDocument();
+    expect(screen.getByText("Friday")).toBeInTheDocument();
+    expect(screen.getByText("First")).toBeInTheDocument();
+    expect(screen.getByText("Second")).toBeInTheDocument();
+  });
+
+  it("ignores groupBy when onReorder is provided (drag-and-drop needs one flat order)", () => {
+    render(
+      <TaskList
+        tasks={tasks}
+        onOpenTask={vi.fn()}
+        onToggleComplete={vi.fn()}
+        onReorder={vi.fn()}
+        emptyTitle="Empty"
+        emptyDescription="Nothing here"
+        groupBy={() => "Group"}
+      />
+    );
+    expect(screen.queryByText("Group")).not.toBeInTheDocument();
+  });
+
   it("still shows the empty state when there are no tasks", () => {
     render(
       <TaskList

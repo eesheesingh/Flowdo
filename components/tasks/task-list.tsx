@@ -68,6 +68,7 @@ export function TaskList({
   emptyDescription,
   labelsByTask,
   readOnly = false,
+  groupBy,
 }: {
   tasks: TaskRowData[];
   onOpenTask: (task: TaskRowData) => void;
@@ -77,6 +78,8 @@ export function TaskList({
   emptyDescription: string;
   labelsByTask?: Map<string, LabelChip[]>;
   readOnly?: boolean;
+  /** When provided, renders tasks under a heading per distinct group label instead of one flat list. Ignored when onReorder is set (drag-and-drop needs one flat order). */
+  groupBy?: (task: TaskRowData) => string;
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -85,6 +88,40 @@ export function TaskList({
 
   if (tasks.length === 0) {
     return <EmptyState icon={CheckCircle2} title={emptyTitle} description={emptyDescription} />;
+  }
+
+  if (!onReorder && groupBy) {
+    const groups = new Map<string, TaskRowData[]>();
+    for (const task of tasks) {
+      const key = groupBy(task);
+      groups.set(key, [...(groups.get(key) ?? []), task]);
+    }
+    return (
+      <div className="space-y-6">
+        {[...groups.entries()].map(([label, groupTasks]) => (
+          <div key={label} className="space-y-2">
+            <div className="flex items-baseline justify-between px-1">
+              <h3 className="font-serif text-lg text-on-surface">{label}</h3>
+              <span className="text-xs text-on-surface-variant">
+                {groupTasks.length} {groupTasks.length === 1 ? "task" : "tasks"}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {groupTasks.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  onOpen={onOpenTask}
+                  onToggleComplete={onToggleComplete}
+                  labels={labelsByTask?.get(task.id)}
+                  readOnly={readOnly}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   if (!onReorder) {

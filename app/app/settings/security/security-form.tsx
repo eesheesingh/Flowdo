@@ -34,13 +34,13 @@ export function SecurityForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-sm space-y-4">
-      <div className="space-y-2">
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      <div className="space-y-1.5">
         <Label htmlFor="password">New password</Label>
         <Input id="password" type="password" autoComplete="new-password" {...register("password")} />
         <FormError message={errors.password?.message} />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="confirmPassword">Confirm new password</Label>
         <Input
           id="confirmPassword"
@@ -51,8 +51,8 @@ export function SecurityForm() {
         <FormError message={errors.confirmPassword?.message} />
       </div>
       <FormError message={submitError ?? undefined} />
-      {success && <p className="text-sm text-primary">Password updated.</p>}
-      <Button type="submit" disabled={isSubmitting}>
+      {success && <p className="text-sm font-medium text-primary">Password updated.</p>}
+      <Button type="submit" disabled={isSubmitting} className="self-start">
         {isSubmitting ? "Updating…" : "Update password"}
       </Button>
     </form>

@@ -1,10 +1,11 @@
 "use client";
 import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import { X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { listSubtasks, createSubtask, subtaskProgress } from "@/lib/tasks/subtasks";
 import { completeTask, reopenTask, deleteTask } from "@/lib/tasks/tasks";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export function SubtaskSection({ taskId, userId }: { taskId: string; userId: string }) {
   const supabase = createClient();
@@ -43,41 +44,39 @@ export function SubtaskSection({ taskId, userId }: { taskId: string; userId: str
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
 
   return (
-    <section className="space-y-2 border-t border-border pt-4">
+    <section className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">Subtasks</h3>
+        <span className="text-xs font-medium uppercase tracking-wider text-on-surface-variant">Subtasks</span>
         {total > 0 && (
-          <span className="text-xs text-muted-foreground">
-            {done} / {total} completed
+          <span className="rounded-full bg-secondary-container px-2 py-0.5 text-xs text-on-secondary-container">
+            {done} of {total} done
           </span>
         )}
       </div>
       {total > 0 && (
         <div
-          className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+          className="h-1 w-full overflow-hidden rounded-full bg-surface-highest"
           role="progressbar"
           aria-valuenow={pct}
           aria-valuemin={0}
           aria-valuemax={100}
         >
-          <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
         </div>
       )}
-      <ul className="space-y-1">
+      <ul className="flex flex-col gap-1 pt-1">
         {subtasks.map((s) => (
-          <li key={s.id} className="flex items-center gap-2">
-            <input
-              type="checkbox"
+          <li key={s.id} className="group flex items-center gap-2 rounded-lg bg-surface-container px-2.5 py-1.5">
+            <Checkbox
               checked={s.status === "COMPLETED"}
-              onChange={() => toggle.mutate(s)}
+              onCheckedChange={() => toggle.mutate(s)}
               aria-label={s.status === "COMPLETED" ? "Reopen subtask" : "Complete subtask"}
-              className="h-4 w-4 rounded border-border"
             />
             <span
               className={
                 s.status === "COMPLETED"
-                  ? "flex-1 text-sm text-muted-foreground line-through"
-                  : "flex-1 text-sm"
+                  ? "flex-1 text-sm text-on-surface-variant line-through"
+                  : "flex-1 text-sm text-on-surface"
               }
             >
               {s.title}
@@ -86,9 +85,9 @@ export function SubtaskSection({ taskId, userId }: { taskId: string; userId: str
               type="button"
               aria-label="Delete subtask"
               onClick={() => remove.mutate(s.id)}
-              className="text-muted-foreground hover:text-destructive"
+              className="text-on-surface-variant opacity-0 transition-opacity hover:text-error group-hover:opacity-100"
             >
-              <Trash2 className="h-4 w-4" />
+              <X className="h-4 w-4" />
             </button>
           </li>
         ))}
@@ -102,8 +101,8 @@ export function SubtaskSection({ taskId, userId }: { taskId: string; userId: str
             add.mutate(title.trim());
           }
         }}
-        placeholder="Add a subtask, press Enter…"
-        className="w-full rounded-md border border-dashed border-border px-3 py-1.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        placeholder="+ Add a subtask..."
+        className="w-full rounded-lg bg-surface-container-low px-3 py-1.5 text-sm text-on-surface placeholder:text-outline transition-colors focus-visible:bg-surface-container focus-visible:outline-none"
       />
     </section>
   );

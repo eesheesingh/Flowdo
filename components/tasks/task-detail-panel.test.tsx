@@ -97,7 +97,7 @@ describe("TaskDetailPanel", () => {
 
     await user.clear(titleInput);
     await user.type(titleInput, "Write final report");
-    await user.click(screen.getByRole("button", { name: /save/i }));
+    await user.click(screen.getByRole("button", { name: /done/i }));
 
     expect(onSave).toHaveBeenCalledWith(
       "1",
@@ -124,7 +124,7 @@ describe("TaskDetailPanel", () => {
     expect(onDelete).toHaveBeenCalledWith("1");
   });
 
-  it("clears an assigned project to null (not undefined) when 'No project' is selected", async () => {
+  it("clears an assigned project to null (not undefined) when 'No list' is selected", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn().mockResolvedValue(undefined);
     const taskWithProject = { ...baseTask, project_id: "11111111-1111-1111-1111-111111111111" };
@@ -154,8 +154,8 @@ describe("TaskDetailPanel", () => {
       />
     );
 
-    await user.selectOptions(screen.getByLabelText(/project/i), "");
-    await user.click(screen.getByRole("button", { name: /save/i }));
+    await user.selectOptions(screen.getByLabelText(/list/i), "");
+    await user.click(screen.getByRole("button", { name: /done/i }));
 
     expect(onSave).toHaveBeenCalledWith("1", expect.objectContaining({ projectId: null }));
   });
@@ -179,7 +179,7 @@ describe("TaskDetailPanel", () => {
 
     const dueDateInput = screen.getByLabelText(/due date/i);
     await user.clear(dueDateInput);
-    await user.click(screen.getByRole("button", { name: /save/i }));
+    await user.click(screen.getByRole("button", { name: /done/i }));
 
     expect(onSave).toHaveBeenCalledWith("1", expect.objectContaining({ dueDate: null }));
   });
@@ -251,7 +251,7 @@ describe("TaskDetailPanel", () => {
       );
 
       await user.click(await screen.findByRole("button", { name: "Work" }));
-      await user.click(screen.getByRole("button", { name: /save/i }));
+      await user.click(screen.getByRole("button", { name: /done/i }));
 
       expect(onLabelsChange).toHaveBeenCalledWith("1", ["l1"]);
     } finally {

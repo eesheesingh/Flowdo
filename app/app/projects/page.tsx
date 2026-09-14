@@ -19,16 +19,19 @@ export default async function ProjectsPage() {
   }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Projects</h1>
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 pb-12">
+      <header className="flex items-center justify-between gap-4">
+        <div>
+          <span className="text-xs font-semibold uppercase tracking-widest text-primary">Organize</span>
+          <h1 className="font-serif text-3xl text-on-surface">Lists</h1>
+        </div>
         <NewProjectButton />
-      </div>
+      </header>
       {projectsWithCounts.length === 0 ? (
         <EmptyState
           icon={FolderKanban}
-          title="No projects yet"
-          description="Create a project to organize your tasks."
+          title="No lists yet"
+          description="Create a list to keep related tasks together."
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

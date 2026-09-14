@@ -47,6 +47,7 @@ export function TaskView({
   hideStatusFilter = false,
   hideManualSort = false,
   currentUserRole,
+  groupBy,
 }: {
   initialTasks: TaskRowData[];
   projects: ProjectRowData[];
@@ -67,6 +68,8 @@ export function TaskView({
   // tasks_update_own require role <> 'VIEWER'); OWNER/ADMIN/MEMBER can all
   // write, so nothing else needs gating.
   currentUserRole?: "OWNER" | "ADMIN" | "MEMBER" | "VIEWER";
+  /** Forwarded to TaskList: groups rows under a heading per distinct label instead of one flat list. Has no effect when enableReorder is true. */
+  groupBy?: (task: TaskRowData) => string;
 }) {
   const isViewer = currentUserRole === "VIEWER";
   const router = useRouter();
@@ -238,6 +241,7 @@ export function TaskView({
         emptyDescription={activeEmptyState.description}
         labelsByTask={labelsByTask}
         readOnly={isViewer}
+        groupBy={groupBy}
       />
       {openTask && (
         <TaskDetailPanel
@@ -257,6 +261,7 @@ export function TaskView({
             deleteMutation.mutate(taskId);
             setOpenTask(null);
           }}
+          onToggleComplete={(t) => toggleCompleteMutation.mutate(t)}
           readOnly={isViewer}
         />
       )}

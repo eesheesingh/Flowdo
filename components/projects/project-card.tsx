@@ -10,18 +10,18 @@ export function ProjectCard({ project, taskCount }: { project: ProjectRowData; t
   return (
     <Link
       href={`/app/projects/${project.id}`}
-      className="flex flex-col gap-3 rounded-lg border border-border p-4 hover:bg-muted"
+      className="flex flex-col gap-3 rounded-xl bg-surface-lowest p-4 shadow-xs transition-shadow hover:shadow-sm"
     >
       <div
-        className="flex h-9 w-9 items-center justify-center rounded-md"
+        className="flex h-9 w-9 items-center justify-center rounded-lg"
         style={{ backgroundColor: `${project.color}1A`, color: project.color }}
       >
         <Icon className="h-5 w-5" />
       </div>
       <div>
-        <p className="font-medium">{project.name}</p>
-        <p className="text-sm text-muted-foreground">
-          {taskCount} {taskCount === 1 ? "task" : "tasks"}
+        <p className="font-medium text-on-surface">{project.name}</p>
+        <p className="text-sm text-on-surface-variant">
+          {taskCount} {taskCount === 1 ? "item" : "items"}
         </p>
       </div>
     </Link>

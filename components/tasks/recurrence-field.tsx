@@ -26,22 +26,24 @@ export function RecurrenceField({
 
   return (
     <div className="space-y-2">
-      <label htmlFor="recurrence" className="text-sm font-medium">Repeat</label>
+      <label htmlFor="recurrence" className="text-xs font-medium uppercase tracking-wider text-on-surface-variant">
+        Repeat
+      </label>
       <select
         id="recurrence"
         aria-label="Repeat"
         value={value.recurrence}
         disabled={!hasDueDate}
         onChange={(e) => pick(e.target.value as Recurrence)}
-        className="flex h-10 w-full rounded-md border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
+        className="flex h-10 w-full rounded-lg bg-surface-container-low px-3 text-sm text-on-surface outline-none transition-colors hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-50"
       >
         {PRESETS.map((p) => <option key={p} value={p}>{LABEL[p]}</option>)}
       </select>
 
-      {!hasDueDate && <p className="text-xs text-muted-foreground">Add a due date to repeat this task.</p>}
+      {!hasDueDate && <p className="text-xs text-on-surface-variant">Add a due date to repeat this task.</p>}
 
       {hasDueDate && value.recurrence === "CUSTOM" && value.rule && (
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-sm text-on-surface">
           <span>every</span>
           <input
             type="number"
@@ -49,13 +51,13 @@ export function RecurrenceField({
             aria-label="Interval"
             value={value.rule.interval}
             onChange={(e) => onChange({ recurrence: "CUSTOM", rule: { ...value.rule!, interval: Math.max(1, Number(e.target.value) || 1) } })}
-            className="h-9 w-16 rounded-md border border-border bg-background px-2"
+            className="h-9 w-16 rounded-lg bg-surface-container-low px-2 text-on-surface outline-none"
           />
           <select
             aria-label="Interval unit"
             value={value.rule.unit}
             onChange={(e) => onChange({ recurrence: "CUSTOM", rule: { ...value.rule!, unit: e.target.value as RecurrenceRule["unit"] } })}
-            className="h-9 rounded-md border border-border bg-background px-2"
+            className="h-9 rounded-lg bg-surface-container-low px-2 text-on-surface outline-none"
           >
             <option value="day">days</option>
             <option value="week">weeks</option>

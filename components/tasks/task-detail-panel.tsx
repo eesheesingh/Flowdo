@@ -1,10 +1,9 @@
 "use client";
 import * as React from "react";
-import * as Dialog from "@radix-ui/react-dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
-import { X } from "lucide-react";
+import { NotebookPen } from "lucide-react";
 import { taskSchema, type TaskInput } from "@/lib/validations/tasks";
 import { createClient } from "@/lib/supabase/client";
 import { listTaskLabels } from "@/lib/tasks/task-labels";
@@ -12,7 +11,10 @@ import type { Recurrence, RecurrenceRule } from "@/lib/tasks/recurrence";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { FormError } from "@/components/ui/form-error";
+import { Sheet, SheetContent, SheetTitle, SheetCloseButton } from "@/components/ui/sheet";
 import { SubtaskSection } from "./subtask-section";
 import { LabelPicker } from "./label-picker";
 import { RecurrenceField } from "./recurrence-field";
@@ -21,6 +23,9 @@ import type { Database } from "@/types/database";
 
 type TaskRowData = Database["flowdo"]["Tables"]["tasks"]["Row"];
 type ProjectRowData = Database["flowdo"]["Tables"]["projects"]["Row"];
+
+const selectClass =
+  "flex h-9 w-full rounded-lg bg-surface-lowest px-2.5 text-sm text-on-surface outline-none transition-colors hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-50";
 
 export function TaskDetailPanel({
   task,
@@ -31,6 +36,7 @@ export function TaskDetailPanel({
   onSave,
   onDelete,
   onLabelsChange,
+  onToggleComplete,
   readOnly = false,
 }: {
   task: TaskRowData;
@@ -41,8 +47,10 @@ export function TaskDetailPanel({
   onSave: (taskId: string, input: TaskInput) => Promise<void>;
   onDelete: (taskId: string) => void;
   onLabelsChange?: (taskId: string, labelIds: string[]) => Promise<void>;
+  onToggleComplete?: (task: TaskRowData) => void;
   readOnly?: boolean;
 }) {
+  const isCompleted = task.status === "COMPLETED";
   const [labelIds, setLabelIds] = React.useState<string[]>([]);
   const { data: assignedLabelIds } = useQuery({
     queryKey: ["task-labels", task.id],
@@ -81,116 +89,137 @@ export function TaskDetailPanel({
   }
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" />
-        <Dialog.Content className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col gap-4 overflow-y-auto bg-background p-6 shadow-lg">
-          <div className="flex items-center justify-between">
-            <Dialog.Title className="text-lg font-semibold">Task details</Dialog.Title>
-            <Dialog.Close asChild>
-              <button aria-label="Close">
-                <X className="h-5 w-5" />
-              </button>
-            </Dialog.Close>
-          </div>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="max-w-[620px]">
+        <div className="h-1 w-full shrink-0 bg-gradient-to-r from-primary-container via-primary to-secondary-container" />
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col overflow-hidden">
+          <fieldset disabled={readOnly} className="contents">
+            <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-1 items-start gap-3">
+                  <Checkbox
+                    checked={isCompleted}
+                    onCheckedChange={() => onToggleComplete?.(task)}
+                    aria-label={isCompleted ? "Reopen task" : "Complete task"}
+                    className="mt-2 h-5 w-5"
+                  />
+                  <div className="flex flex-1 flex-col gap-1">
+                    <SheetTitle className="sr-only">Task details</SheetTitle>
+                    <Label htmlFor="title" className="sr-only">
+                      Title
+                    </Label>
+                    <input
+                      id="title"
+                      {...register("title")}
+                      className="w-full rounded-md bg-transparent px-1 font-serif text-xl text-on-surface transition-colors placeholder:text-outline focus:bg-surface-container-low focus:outline-none"
+                    />
+                    <FormError message={errors.title?.message} />
+                  </div>
+                </div>
+                <SheetCloseButton />
+              </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col gap-4">
-            {/* A VIEWER can open this panel to read a task's details (RLS still
-                allows SELECT), just not edit them -- native <fieldset disabled>
-                greys out and disables every form control it contains in one
-                shot, no per-field wiring needed. `contents` keeps it from
-                affecting the form's own flex layout. */}
-            <fieldset disabled={readOnly} className="contents">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input id="title" {...register("title")} />
-              <FormError message={errors.title?.message} />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <textarea
-                id="description"
-                {...register("description")}
-                rows={4}
-                className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="dueDate">Due date</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  {...register("dueDate", {
-                    setValueAs: (value: string) => (value === "" ? null : value),
-                  })}
+              <div className="rounded-xl bg-surface-container-low p-4">
+                <span className="mb-1.5 flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-on-surface-variant">
+                  <NotebookPen className="h-3.5 w-3.5" /> Notes
+                </span>
+                <Textarea
+                  id="description"
+                  {...register("description")}
+                  rows={3}
+                  placeholder="Add notes or details..."
+                  className="border-none bg-transparent p-0 shadow-none focus-visible:ring-0"
                 />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="priority">Priority</Label>
+                <span className="block text-xs font-medium uppercase tracking-wider text-on-surface-variant">
+                  Timing &amp; cadence
+                </span>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5 rounded-xl bg-surface-container p-3">
+                    <Label htmlFor="dueDate" className="text-xs text-on-surface-variant">
+                      Due date
+                    </Label>
+                    <Input
+                      id="dueDate"
+                      type="date"
+                      {...register("dueDate", {
+                        setValueAs: (value: string) => (value === "" ? null : value),
+                      })}
+                      className="bg-surface-lowest"
+                    />
+                  </div>
+                  <div className="space-y-1.5 rounded-xl bg-surface-container p-3">
+                    <Label htmlFor="priority" className="text-xs text-on-surface-variant">
+                      Priority
+                    </Label>
+                    <select id="priority" {...register("priority")} className={selectClass}>
+                      <option value="LOW">Low</option>
+                      <option value="MEDIUM">Medium</option>
+                      <option value="HIGH">High</option>
+                      <option value="URGENT">Urgent</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="rounded-xl bg-surface-container p-3">
+                  <RecurrenceField value={recurrence} onChange={setRecurrence} hasDueDate={!!dueDateValue} />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="projectId" className="text-xs font-medium uppercase tracking-wider text-on-surface-variant">
+                  List
+                </Label>
                 <select
-                  id="priority"
-                  {...register("priority")}
-                  className="flex h-10 w-full rounded-md border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  id="projectId"
+                  {...register("projectId", {
+                    setValueAs: (value: string) => (value === "" ? null : value),
+                  })}
+                  className={selectClass + " bg-surface-container-low hover:bg-surface-container"}
                 >
-                  <option value="LOW">Low</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HIGH">High</option>
-                  <option value="URGENT">Urgent</option>
+                  <option value="">No list (Inbox)</option>
+                  {task.project_id && !projects.some((project) => project.id === task.project_id) && (
+                    // The task's project isn't in `projects` (listProjects() excludes archived
+                    // projects by default), so without this fallback option the select would
+                    // silently fall back to "No list (Inbox)" for an archived project's task.
+                    // We don't have the archived project's name here, so label it generically.
+                    <option value={task.project_id}>Archived list</option>
+                  )}
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
                 </select>
               </div>
+
+              <SubtaskSection taskId={task.id} userId={userId} />
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium uppercase tracking-wider text-on-surface-variant">Labels</Label>
+                <LabelPicker userId={userId} value={labelIds} onChange={setLabelIds} />
+              </div>
+
+              <ActivityFeed taskId={task.id} />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="projectId">Project</Label>
-              <select
-                id="projectId"
-                {...register("projectId", {
-                  setValueAs: (value: string) => (value === "" ? null : value),
-                })}
-                className="flex h-10 w-full rounded-md border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              >
-                <option value="">No project (Inbox)</option>
-                {task.project_id && !projects.some((project) => project.id === task.project_id) && (
-                  // The task's project isn't in `projects` (listProjects() excludes archived
-                  // projects by default), so without this fallback option the select would
-                  // silently fall back to "No project (Inbox)" for an archived project's task.
-                  // We don't have the archived project's name here, so label it generically.
-                  <option value={task.project_id}>Archived project</option>
-                )}
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <SubtaskSection taskId={task.id} userId={userId} />
-
-            <div className="space-y-2">
-              <Label>Labels</Label>
-              <LabelPicker userId={userId} value={labelIds} onChange={setLabelIds} />
-            </div>
-
-            <RecurrenceField value={recurrence} onChange={setRecurrence} hasDueDate={!!dueDateValue} />
-
-            <ActivityFeed taskId={task.id} />
-
-            <div className="mt-auto flex items-center justify-between pt-4">
-              <Button type="button" variant="ghost" onClick={() => onDelete(task.id)} className="text-destructive">
-                Delete
+            <div className="flex shrink-0 items-center justify-between gap-3 bg-surface-lowest px-6 py-4 shadow-[0_-4px_16px_rgba(0,0,0,0.03)]">
+              <Button type="button" variant="ghost" onClick={() => onDelete(task.id)} className="text-error hover:bg-error-container hover:text-on-error-container">
+                Delete task
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving…" : "Save"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving…" : "Done"}
+                </Button>
+              </div>
             </div>
-            </fieldset>
-          </form>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+          </fieldset>
+        </form>
+      </SheetContent>
+    </Sheet>
   );
 }

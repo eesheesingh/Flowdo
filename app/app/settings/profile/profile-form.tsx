@@ -43,19 +43,19 @@ export function ProfileForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-sm space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="email">Account email</Label>
         <Input id="email" value={email} disabled />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="fullName">Name</Label>
         <Input id="fullName" autoComplete="name" {...register("fullName")} />
         <FormError message={errors.fullName?.message} />
       </div>
       <FormError message={submitError ?? undefined} />
-      {success && <p className="text-sm text-primary">Profile updated.</p>}
-      <Button type="submit" disabled={isSubmitting}>
+      {success && <p className="text-sm font-medium text-primary">Profile updated.</p>}
+      <Button type="submit" disabled={isSubmitting} className="self-start">
         {isSubmitting ? "Saving…" : "Save changes"}
       </Button>
     </form>
