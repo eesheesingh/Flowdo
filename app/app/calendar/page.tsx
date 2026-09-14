@@ -32,8 +32,7 @@ export default async function CalendarPage({
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-12">
       <header className="flex flex-col gap-1">
-        <span className="text-xs font-semibold uppercase tracking-widest text-primary">Calendar</span>
-        <h1 className="font-serif text-3xl text-on-surface">Your month, at a glance</h1>
+        <h1 className="font-serif text-4xl tracking-tight text-on-surface sm:text-5xl">Calendar</h1>
         <p className="max-w-xl text-on-surface-variant">
           Click any day to see, add, or check off what&apos;s planned for it.
         </p>

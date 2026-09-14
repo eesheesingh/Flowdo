@@ -50,8 +50,7 @@ export default async function ProfilePage() {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 pb-12">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <span className="text-xs font-semibold uppercase tracking-widest text-primary">Your space</span>
-          <h1 className="font-serif text-3xl text-on-surface">{name}</h1>
+          <h1 className="font-serif text-4xl tracking-tight text-on-surface sm:text-5xl">{name}</h1>
           <p className="mt-1 text-on-surface-variant">
             {memberSince ? `Member since ${memberSince} · ` : ""}
             {user.email}

@@ -44,8 +44,7 @@ export default async function SettingsPage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 pb-12">
       <header className="flex flex-col gap-1">
-        <span className="text-xs font-semibold uppercase tracking-widest text-primary">Preferences</span>
-        <h1 className="font-serif text-3xl text-on-surface">Settings</h1>
+        <h1 className="font-serif text-4xl tracking-tight text-on-surface sm:text-5xl">Settings</h1>
         <p className="text-on-surface-variant">Manage your account, security, and how FlowDo looks.</p>
       </header>
 

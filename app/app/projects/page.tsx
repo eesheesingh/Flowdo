@@ -23,7 +23,7 @@ export default async function ProjectsPage() {
       <header className="flex items-center justify-between gap-4">
         <div>
           <span className="text-xs font-semibold uppercase tracking-widest text-primary">Organize</span>
-          <h1 className="font-serif text-3xl text-on-surface">Lists</h1>
+          <h1 className="font-serif text-4xl tracking-tight text-on-surface sm:text-5xl">Lists</h1>
         </div>
         <NewProjectButton />
       </header>

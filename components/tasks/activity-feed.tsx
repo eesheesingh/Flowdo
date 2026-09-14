@@ -30,7 +30,7 @@ export function ActivityFeed({ taskId, projectId }: { taskId?: string; projectId
 
   return (
     <section className="space-y-2">
-      <span className="text-xs font-medium uppercase tracking-wider text-on-surface-variant">Activity</span>
+      <span className="text-sm font-medium text-on-surface-variant">Activity</span>
       {rows.length === 0 ? (
         <p className="text-xs text-on-surface-variant">No activity yet.</p>
       ) : (

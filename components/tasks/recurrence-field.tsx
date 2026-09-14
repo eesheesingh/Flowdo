@@ -26,7 +26,7 @@ export function RecurrenceField({
 
   return (
     <div className="space-y-2">
-      <label htmlFor="recurrence" className="text-xs font-medium uppercase tracking-wider text-on-surface-variant">
+      <label htmlFor="recurrence" className="text-sm font-medium text-on-surface-variant">
         Repeat
       </label>
       <select

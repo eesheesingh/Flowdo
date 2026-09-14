@@ -23,36 +23,36 @@ export function ProjectStatsHeader({
   const offset = circumference - (circumference * percent) / 100;
 
   return (
-    <div className="rounded-xl bg-surface-lowest p-5 shadow-sm sm:p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex items-start gap-3">
+    <div className="relative overflow-hidden rounded-xl bg-surface-lowest p-5 shadow-sm sm:p-7">
+      <div
+        className="pointer-events-none absolute -left-16 -top-20 h-56 w-56 rounded-full opacity-20 blur-3xl"
+        style={{ backgroundColor: project.color }}
+        aria-hidden="true"
+      />
+      <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex items-start gap-4">
           <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-            style={{ backgroundColor: `${project.color}1A`, color: project.color }}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
+            style={{ backgroundColor: `${project.color}22`, color: project.color }}
           >
-            <Icon className="h-5 w-5" />
+            <Icon className="h-6 w-6" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: project.color }}>
-                List
+            {project.status === "ARCHIVED" && (
+              <span className="mb-1 inline-block rounded-full bg-surface-container px-2 py-0.5 text-xs font-medium text-on-surface-variant">
+                Archived
               </span>
-              {project.status === "ARCHIVED" && (
-                <span className="rounded-full bg-surface-container px-2 py-0.5 text-xs font-medium text-on-surface-variant">
-                  Archived
-                </span>
-              )}
-            </div>
-            <h1 className="font-serif text-2xl text-on-surface">{project.name}</h1>
+            )}
+            <h1 className="font-serif text-4xl tracking-tight text-on-surface sm:text-5xl">{project.name}</h1>
             {project.description && (
-              <p className="mt-1 max-w-md text-sm italic text-on-surface-variant">{project.description}</p>
+              <p className="mt-1.5 max-w-md text-sm text-on-surface-variant">{project.description}</p>
             )}
           </div>
         </div>
 
         <div className="flex items-center gap-4 self-start rounded-xl bg-surface-container-low px-4 py-2.5 sm:self-auto">
-          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center">
-            <svg className="h-12 w-12 -rotate-90" viewBox="0 0 40 40">
+          <div className="relative flex h-14 w-14 shrink-0 items-center justify-center">
+            <svg className="h-14 w-14 -rotate-90" viewBox="0 0 40 40">
               <circle cx="20" cy="20" r="18" fill="none" strokeWidth="3.5" className="stroke-surface-highest" />
               <circle
                 cx="20"
@@ -66,10 +66,9 @@ export function ProjectStatsHeader({
                 strokeDashoffset={offset}
               />
             </svg>
-            <span className="absolute text-xs font-semibold text-on-surface">{percent}%</span>
+            <span className="absolute text-sm font-semibold text-on-surface">{percent}%</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-xs uppercase tracking-wider text-on-surface-variant">Progress</span>
             <span className="text-sm font-medium text-on-surface">
               {total - completed} {total - completed === 1 ? "item" : "items"} left
             </span>
@@ -77,7 +76,7 @@ export function ProjectStatsHeader({
           </div>
         </div>
       </div>
-      {actions && <div className="mt-4 flex items-center gap-2">{actions}</div>}
+      {actions && <div className="relative mt-4 flex items-center gap-2">{actions}</div>}
     </div>
   );
 }

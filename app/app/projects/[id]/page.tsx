@@ -117,10 +117,7 @@ export default async function ProjectDetailPage({
         )}
       </div>
 
-      <div className="space-y-3">
-        <h2 className="text-xs font-medium uppercase tracking-wider text-on-surface-variant">Activity</h2>
-        <ActivityFeed projectId={project.id} />
-      </div>
+      <ActivityFeed projectId={project.id} />
     </div>
   );
 }

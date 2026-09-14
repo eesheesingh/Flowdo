@@ -65,7 +65,7 @@ export default async function CompletedPage({
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 pb-12">
       <header className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <h1 className="font-serif text-3xl text-on-surface">Completed</h1>
+          <h1 className="font-serif text-4xl tracking-tight text-on-surface sm:text-5xl">Completed</h1>
           <span className="rounded-full bg-surface-container px-2.5 py-0.5 text-xs text-on-surface-variant">
             Archive
           </span>

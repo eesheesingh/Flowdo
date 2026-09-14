@@ -3,41 +3,45 @@
 @tailwind utilities;
 
 :root {
-  /* Mindful Journal Todo — light palette (source of truth: Stitch design system) */
-  --background: 274 33% 98%;
-  --foreground: 240 8% 10%;
+  /* FlowDo light palette — warm violet ink on a visibly tinted paper canvas,
+     with real lightness steps between layers so cards actually lift off the
+     page instead of blending into it. */
+  --background: 258 28% 93%;
+  --foreground: 240 10% 10%;
 
-  --surface: 274 33% 98%;
+  --surface: 258 28% 93%;
   --surface-lowest: 0 0% 100%;
-  --surface-low: 285 20% 96%;
-  --surface-container: 270 12% 94%;
-  --surface-high: 260 8% 91%;
-  --surface-highest: 260 8% 88%;
+  --surface-low: 258 22% 96%;
+  --surface-container: 255 30% 90%;
+  --surface-high: 254 26% 85%;
+  --surface-highest: 253 24% 79%;
 
-  --on-surface: 240 8% 10%;
-  --on-surface-variant: 247 8% 28%;
-  --outline: 245 6% 47%;
-  --outline-variant: 251 12% 79%;
+  --on-surface: 240 10% 10%;
+  --on-surface-variant: 247 10% 32%;
+  --outline: 245 7% 45%;
+  --outline-variant: 252 16% 82%;
 
-  --primary: 249 65% 47%;
-  --primary-container: 248 65% 55%;
+  --primary: 249 70% 45%;
+  --primary-container: 249 74% 58%;
   --on-primary: 0 0% 100%;
-  --on-primary-container: 249 100% 92%;
+  --on-primary-container: 249 100% 94%;
   --primary-fixed: 249 100% 92%;
   --on-primary-fixed: 245 100% 20%;
 
-  --secondary: 247 8% 39%;
-  --secondary-container: 249 45% 90%;
-  --on-secondary-container: 245 8% 42%;
+  --secondary: 247 10% 36%;
+  --secondary-container: 249 48% 89%;
+  --on-secondary-container: 246 30% 28%;
   --secondary-fixed: 249 45% 90%;
   --on-secondary-fixed: 245 20% 12%;
   --on-secondary-fixed-variant: 246 10% 27%;
 
-  --tertiary: 25 100% 25%;
-  --tertiary-container: 27 100% 32%;
-  --tertiary-fixed: 20 100% 90%;
-  --on-tertiary-fixed: 20 84% 10%;
-  --on-tertiary-fixed-variant: 20 65% 25%;
+  /* Warm honey — the app's one deliberate second accent, reserved for
+     momentum/streak signals so it doesn't compete with violet everywhere. */
+  --tertiary: 32 85% 32%;
+  --tertiary-container: 35 88% 48%;
+  --tertiary-fixed: 40 95% 91%;
+  --on-tertiary-fixed: 28 84% 16%;
+  --on-tertiary-fixed-variant: 30 70% 26%;
 
   --error: 0 65% 40%;
   --error-container: 4 100% 92%;
@@ -45,8 +49,8 @@
   --destructive: var(--error);
   --destructive-foreground: 0 0% 100%;
 
-  --inverse-surface: 240 3% 19%;
-  --inverse-on-surface: 280 14% 95%;
+  --inverse-surface: 240 8% 16%;
+  --inverse-on-surface: 258 20% 95%;
   --inverse-primary: 249 100% 83%;
 
   /* shadcn-compatible aliases */
@@ -54,46 +58,46 @@
   --muted: var(--surface-container);
   --muted-foreground: var(--on-surface-variant);
 
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
 }
 
 .dark {
-  --background: 240 8% 8%;
-  --foreground: 270 14% 91%;
+  --background: 245 14% 9%;
+  --foreground: 258 20% 93%;
 
-  --surface: 240 8% 8%;
-  --surface-lowest: 240 8% 12%;
-  --surface-low: 240 7% 14%;
-  --surface-container: 240 6% 17%;
-  --surface-high: 240 6% 21%;
-  --surface-highest: 240 5% 26%;
+  --surface: 245 14% 9%;
+  --surface-lowest: 245 13% 14%;
+  --surface-low: 245 12% 17%;
+  --surface-container: 245 11% 21%;
+  --surface-high: 245 10% 26%;
+  --surface-highest: 245 9% 32%;
 
-  --on-surface: 270 14% 91%;
-  --on-surface-variant: 251 12% 79%;
-  --outline: 250 8% 61%;
-  --outline-variant: 247 8% 28%;
+  --on-surface: 258 20% 93%;
+  --on-surface-variant: 252 16% 82%;
+  --outline: 250 9% 62%;
+  --outline-variant: 247 10% 30%;
 
   --primary: 249 100% 83%;
-  --primary-container: 248 55% 40%;
+  --primary-container: 249 60% 44%;
   --on-primary: 245 100% 15%;
-  --on-primary-container: 249 100% 92%;
+  --on-primary-container: 249 100% 94%;
   --primary-fixed: 249 100% 92%;
   --on-primary-fixed: 245 100% 20%;
 
-  --secondary: 251 12% 79%;
-  --secondary-container: 246 15% 27%;
-  --on-secondary-container: 249 45% 88%;
+  --secondary: 252 16% 82%;
+  --secondary-container: 246 18% 29%;
+  --on-secondary-container: 249 48% 89%;
   --secondary-fixed: 249 45% 90%;
   --on-secondary-fixed: 245 20% 12%;
   --on-secondary-fixed-variant: 246 10% 27%;
 
-  --tertiary: 20 100% 80%;
-  --tertiary-container: 20 60% 28%;
-  --tertiary-fixed: 20 100% 90%;
-  --on-tertiary-fixed: 20 84% 10%;
-  --on-tertiary-fixed-variant: 20 65% 25%;
+  --tertiary: 38 95% 74%;
+  --tertiary-container: 34 70% 32%;
+  --tertiary-fixed: 40 95% 91%;
+  --on-tertiary-fixed: 28 84% 16%;
+  --on-tertiary-fixed-variant: 30 70% 26%;
 
   --error: 5 100% 82%;
   --error-container: 5 60% 27%;
@@ -101,9 +105,9 @@
   --destructive: var(--error);
   --destructive-foreground: 5 100% 12%;
 
-  --inverse-surface: 270 14% 91%;
-  --inverse-on-surface: 240 8% 15%;
-  --inverse-primary: 249 65% 47%;
+  --inverse-surface: 258 20% 93%;
+  --inverse-on-surface: 245 14% 16%;
+  --inverse-primary: 249 70% 45%;
 
   --border: var(--outline-variant);
   --muted: var(--surface-container);

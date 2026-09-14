@@ -44,13 +44,18 @@ export default async function TodayPage({
   const circumference = 2 * Math.PI * 15.915; // matches the SVG path's radius below
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 pb-8">
-      <header className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+    <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-6 pb-8">
+      <div
+        className="pointer-events-none absolute -left-10 -top-16 h-72 w-72 rounded-full bg-primary-container/20 blur-3xl"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute -top-10 right-0 h-64 w-64 rounded-full bg-tertiary-container/15 blur-3xl"
+        aria-hidden="true"
+      />
+      <header className="relative flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant">
-              Morning sanctuary
-            </span>
             {total > 0 && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary-container px-2.5 py-0.5 text-xs font-medium text-on-secondary-container">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -58,7 +63,7 @@ export default async function TodayPage({
               </span>
             )}
           </div>
-          <h1 className="font-serif text-3xl text-on-surface tracking-tight sm:text-4xl">
+          <h1 className="font-serif text-4xl tracking-tight text-on-surface sm:text-5xl">
             {greeting(now)}, {name}
           </h1>
           <p className="max-w-xl text-on-surface-variant">

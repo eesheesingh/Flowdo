@@ -46,7 +46,7 @@ export function SubtaskSection({ taskId, userId }: { taskId: string; userId: str
   return (
     <section className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wider text-on-surface-variant">Subtasks</span>
+        <span className="text-sm font-medium text-on-surface-variant">Subtasks</span>
         {total > 0 && (
           <span className="rounded-full bg-secondary-container px-2 py-0.5 text-xs text-on-secondary-container">
             {done} of {total} done
